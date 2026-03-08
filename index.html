@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EBS 영단어">
+<meta name="theme-color" content="#4f46e5">
+<link rel="manifest" href="manifest.json">
+<title>EBS 영단어 앱</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ────────────────── TOKENS ────────────────── */
+:root{
+  --ind:#4f46e5; --ind-l:#818cf8; --ind-d:#3730a3;
+  --grn:#22c55e; --grn-d:#16a34a;
+  --red:#ef4444; --red-d:#dc2626;
+  --amb:#f59e0b; --amb-d:#d97706;
+  --pnk:#ec4899; --pnk-d:#db2777;
+  --bg:#f8faff; --surface:#ffffff;
+  --txt:#1e1b4b; --muted:#94a3b8; --border:#e2e8f0;
+  --radius:20px; --card-shadow:0 4px 24px rgba(79,70,229,.10);
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:var(--bg);font-family:'Noto Sans KR',sans-serif;color:var(--txt);}
+
+/* ────────────────── APP SHELL ────────────────── */
+#app{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto;position:relative;overflow:hidden;}
+
+/* ────────────────── SCREENS ────────────────── */
+.screen{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  background:var(--bg);overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  transition:transform .32s cubic-bezier(.4,0,.2,1),opacity .32s ease;
+  padding-bottom:calc(64px + var(--safe-b));
+}
+.screen.off{transform:translateX(100%);opacity:0;pointer-events:none;}
+.screen.offL{transform:translateX(-100%);opacity:0;pointer-events:none;}
+
+/* ────────────────── TOPBAR ────────────────── */
+.topbar{
+  display:flex;align-items:center;gap:10px;flex-shrink:0;
+  padding:calc(var(--safe-t) + 14px) 16px 14px;
+  background:linear-gradient(135deg,var(--ind),var(--ind-d));
+  color:#fff;
+}
+.tb-back{background:rgba(255,255,255,.18);border:none;border-radius:10px;padding:6px 12px;color:#fff;font-size:.85rem;cursor:pointer;}
+.tb-back:active{opacity:.7;}
+.tb-title{flex:1;font-family:'Jua',sans-serif;font-size:1.15rem;text-align:center;}
+.tb-right{width:56px;text-align:right;font-size:.75rem;opacity:.8;}
+
+/* ────────────────── HOME ────────────────── */
+#homeScreen{padding-bottom:calc(64px + var(--safe-b));}
+.home-hero{
+  background:linear-gradient(150deg,#4f46e5 0%,#7c3aed 50%,#a855f7 100%);
+  padding:calc(var(--safe-t)+28px) 20px 36px;
+  text-align:center;border-radius:0 0 40px 40px;flex-shrink:0;
+  position:relative;overflow:hidden;
+}
+.home-hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none;}
+.app-mascot{font-size:4rem;display:block;animation:mascotBob 3s ease-in-out infinite alternate;}
+@keyframes mascotBob{from{transform:translateY(0);}to{transform:translateY(-10px);}}
+.app-name{font-family:'Jua',sans-serif;font-size:2rem;color:#fff;margin-top:6px;text-shadow:0 2px 12px rgba(0,0,0,.2);}
+.app-sub{font-size:.8rem;color:rgba(255,255,255,.75);margin-top:4px;}
+
+.stats-row{display:flex;gap:8px;padding:14px 14px 0;}
+.stat-card{flex:1;background:var(--surface);border-radius:16px;padding:12px 8px;text-align:center;box-shadow:var(--card-shadow);}
+.stat-card .sv{font-family:'Jua',sans-serif;font-size:1.5rem;color:var(--ind);display:block;}
+.stat-card .sl{font-size:.65rem;color:var(--muted);margin-top:2px;}
+
+.section-hd{font-size:.7rem;color:var(--muted);padding:14px 16px 6px;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;}
+
+.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px;}
+.menu-cell{
+  background:var(--surface);border-radius:var(--radius);padding:18px 12px;
+  text-align:center;cursor:pointer;box-shadow:var(--card-shadow);
+  transition:transform .15s,box-shadow .15s;border:2px solid transparent;
+  position:relative;overflow:hidden;
+}
+.menu-cell:active{transform:scale(.95);box-shadow:none;}
+.menu-cell.c-ind{border-color:#c7d2fe;}
+.menu-cell.c-grn{border-color:#bbf7d0;}
+.menu-cell.c-amb{border-color:#fde68a;}
+.menu-cell.c-pnk{border-color:#fbcfe8;}
+.mc-icon{font-size:2.6rem;display:block;margin-bottom:8px;}
+.mc-title{font-family:'Jua',sans-serif;font-size:1rem;color:var(--txt);}
+.mc-desc{font-size:.68rem;color:var(--muted);margin-top:3px;}
+.mc-badge{position:absolute;top:8px;right:8px;background:var(--red);color:#fff;border-radius:8px;font-size:.6rem;padding:2px 7px;font-weight:700;}
+
+.review-strip{
+  margin:10px 14px 0;background:linear-gradient(135deg,#fff0f6,#fef3c7);
+  border:2px solid #fbcfe8;border-radius:16px;padding:12px 14px;
+  display:flex;align-items:center;gap:10px;cursor:pointer;
+}
+.review-strip:active{opacity:.8;}
+.rs-icon{font-size:1.6rem;}
+.rs-body{flex:1;}
+.rs-title{font-size:.9rem;font-weight:700;color:var(--txt);}
+.rs-sub{font-size:.7rem;color:var(--muted);}
+
+/* ────────────────── BOTTOM NAV ────────────────── */
+.bottom-nav{
+  display:flex;background:var(--surface);
+  border-top:1px solid var(--border);
+  padding:8px 0 calc(8px + var(--safe-b));
+  flex-shrink:0;position:absolute;bottom:0;left:0;right:0;z-index:100;
+}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border:none;background:none;cursor:pointer;}
+.nav-btn:active{transform:scale(.88);}
+.nav-icon{font-size:1.4rem;transition:transform .2s;}
+.nav-label{font-size:.6rem;color:var(--muted);font-family:'Noto Sans KR',sans-serif;}
+.nav-btn.active .nav-icon{animation:navPop .3s ease;}
+.nav-btn.active .nav-label{color:var(--ind);font-weight:700;}
+@keyframes navPop{0%{transform:scale(1);}50%{transform:scale(1.3);}100%{transform:scale(1);}}
+
+/* ────────────────── FLASHCARD ────────────────── */
+.set-tabs{display:flex;gap:8px;padding:10px 14px 0;flex-shrink:0;}
+.set-tab{flex:1;padding:9px;border-radius:12px;border:2px solid var(--border);background:var(--surface);font-family:'Jua',sans-serif;font-size:.88rem;cursor:pointer;transition:all .15s;color:var(--txt);text-align:center;}
+.set-tab.active{background:var(--ind);border-color:var(--ind);color:#fff;}
+.set-tab:active{transform:scale(.95);}
+
+.set-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:10px 14px;}
+.set-cell{background:var(--surface);border:2px solid var(--border);border-radius:13px;padding:9px 4px;text-align:center;cursor:pointer;transition:all .15s;position:relative;}
+.set-cell:active{transform:scale(.92);background:#eef2ff;}
+.set-cell.done{border-color:var(--grn);background:#f0fdf4;}
+.set-cell.done::after{content:'✓';position:absolute;top:3px;right:5px;font-size:.6rem;color:var(--grn);}
+.set-cell.prog{border-color:var(--ind);}
+.sc-num{font-family:'Jua',sans-serif;font-size:.95rem;color:var(--txt);display:block;}
+.sc-range{font-size:.55rem;color:var(--muted);display:block;margin-top:1px;}
+.sc-pct{font-size:.58rem;margin-top:2px;color:var(--grn);}
+
+/* Study area */
+.fc-study{flex:1;display:flex;flex-direction:column;padding:10px 14px;gap:10px;overflow:hidden;min-height:0;}
+.fc-hud{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.pill{background:var(--surface);border-radius:50px;padding:4px 12px;font-size:.78rem;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+.pill.g{color:var(--grn);}
+.pill.r{color:var(--red);}
+.prog-wrap{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--ind),var(--grn));transition:width .4s ease;}
+
+.scene{flex:1;perspective:1100px;position:relative;min-height:0;}
+.card-3d{width:100%;height:100%;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,0,.2,1);position:relative;}
+.card-3d.flip{transform:rotateY(180deg);}
+.face{position:absolute;inset:0;border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;backface-visibility:hidden;-webkit-backface-visibility:hidden;cursor:pointer;padding:22px 18px;box-shadow:var(--card-shadow);}
+.face.front{background:var(--surface);border-top:6px solid var(--ind);}
+.face.back{background:#fffbf0;border-top:6px solid var(--amb);transform:rotateY(180deg);}
+.f-word{font-family:'Jua',sans-serif;font-size:2.8rem;color:var(--txt);text-align:center;line-height:1.1;}
+.f-word.md{font-size:2rem;}
+.f-word.sm{font-size:1.5rem;}
+.f-kor{font-family:'Jua',sans-serif;font-size:2.2rem;color:var(--txt);text-align:center;margin:10px 0;line-height:1.25;}
+.f-kor.sm{font-size:1.5rem;}
+.f-back-eng{font-size:.9rem;color:var(--ind);margin-bottom:4px;}
+.f-hint{font-size:.68rem;color:var(--muted);position:absolute;bottom:12px;animation:blinkHint 2s infinite;}
+@keyframes blinkHint{0%,100%{opacity:.35;}50%{opacity:1;}}
+.speak-btn{background:linear-gradient(135deg,var(--ind),var(--ind-d));border:none;border-radius:50px;padding:9px 20px;color:#fff;font-family:'Jua',sans-serif;font-size:.95rem;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 4px 14px rgba(79,70,229,.3);margin-top:10px;}
+.speak-btn:active{transform:scale(.95);}
+
+.swipe-hint{text-align:center;font-size:.68rem;color:var(--muted);flex-shrink:0;}
+.act-row{display:flex;gap:10px;flex-shrink:0;}
+.act-btn{flex:1;padding:14px 10px;border-radius:18px;border:none;font-family:'Jua',sans-serif;font-size:1rem;cursor:pointer;transition:transform .12s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.act-btn:active{transform:scale(.95);}
+.act-k{background:linear-gradient(135deg,var(--grn),var(--grn-d));color:#fff;box-shadow:0 4px 14px rgba(34,197,94,.28);}
+.act-d{background:linear-gradient(135deg,var(--red),var(--red-d));color:#fff;box-shadow:0 4px 14px rgba(239,68,68,.28);}
+
+/* FC result */
+.fc-res{display:none;flex-direction:column;gap:12px;padding:14px;align-items:center;}
+.fc-res.on{display:flex;}
+.res-box{background:var(--surface);border-radius:var(--radius);padding:22px 18px;box-shadow:var(--card-shadow);width:100%;text-align:center;border-top:6px solid var(--amb);animation:popUp .35s cubic-bezier(.175,.885,.32,1.275);}
+@keyframes popUp{from{transform:scale(.8);opacity:0;}to{transform:scale(1);opacity:1;}}
+.res-emo{font-size:3.5rem;}
+.res-ttl{font-family:'Jua',sans-serif;font-size:1.8rem;color:var(--txt);margin:4px 0;}
+.res-pct{font-family:'Jua',sans-serif;font-size:3rem;color:var(--ind);}
+.res-stats{display:flex;gap:8px;justify-content:center;margin:10px 0;}
+.res-stat{background:#f8faff;border-radius:12px;padding:8px 14px;text-align:center;}
+.res-stat .rv{font-family:'Jua',sans-serif;font-size:1.3rem;display:block;}
+.res-stat .rl{font-size:.62rem;color:var(--muted);}
+.res-stat.g .rv{color:var(--grn);}
+.res-stat.r .rv{color:var(--red);}
+.dont-scroll{background:#fff5f5;border-radius:12px;padding:10px;width:100%;max-height:130px;overflow-y:auto;text-align:left;}
+.dont-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #ffe4e4;font-size:.8rem;}
+.dont-row:last-child{border:none;}
+.res-btns{display:flex;flex-direction:column;gap:8px;width:100%;}
+.res-btn{padding:13px;border-radius:16px;border:none;font-family:'Jua',sans-serif;font-size:1rem;cursor:pointer;transition:transform .12s;}
+.res-btn:active{transform:scale(.96);}
+.rb-rev{background:linear-gradient(135deg,var(--red),var(--red-d));color:#fff;}
+.rb-again{background:linear-gradient(135deg,var(--ind),var(--ind-d));color:#fff;}
+.rb-back{background:var(--surface);color:var(--muted);border:2px solid var(--border);}
+
+/* ────────────────── MATCHING ────────────────── */
+.mt-hud{display:flex;gap:7px;padding:10px 14px;align-items:center;flex-shrink:0;}
+.mt-hud .pill .pv{font-family:'Jua',sans-serif;font-size:1.05rem;}
+.mt-hud .pbar{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden;}
+.mt-hud .pbar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--pnk),var(--ind));transition:width .4s;}
+
+.mt-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 14px 8px;flex:1;}
+.col-hd{font-size:.62rem;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;}
+.m-col{display:flex;flex-direction:column;gap:7px;}
+.m-card{
+  padding:11px 9px;border-radius:13px;border:2.5px solid transparent;
+  cursor:pointer;text-align:center;font-size:.9rem;font-weight:700;
+  transition:transform .12s,background .12s,border-color .12s;
+  min-height:50px;display:flex;align-items:center;justify-content:center;
+  position:relative;line-height:1.25;word-break:break-word;user-select:none;
+  box-shadow:0 2px 8px rgba(0,0,0,.05);
+}
+.m-card.eng{background:#eef2ff;border-color:#c7d2fe;color:#312e81;}
+.m-card.kor{background:#fdf2f8;border-color:#fbcfe8;color:#831843;}
+.m-card.eng.sel{background:var(--ind);border-color:var(--ind-d);color:#fff;transform:scale(1.05);}
+.m-card.kor.sel{background:var(--pnk);border-color:var(--pnk-d);color:#fff;transform:scale(1.05);}
+.m-card.matched{background:#f0fdf4;border-color:var(--grn);color:var(--grn);opacity:.6;cursor:default;}
+.m-card.matched::after{content:'✓';position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:.8rem;}
+.m-card.wrong-f{animation:wrongShake .4s ease;background:#fee2e2!important;border-color:var(--red)!important;}
+@keyframes wrongShake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+.m-spk{position:absolute;top:4px;right:5px;font-size:.62rem;opacity:.35;}
+.m-card.sel .m-spk{opacity:1;}
+
+.mt-setup-inner{padding:10px 14px;display:flex;flex-direction:column;gap:10px;}
+.mt-diff-row{display:flex;gap:8px;}
+.diff-opt{flex:1;padding:10px;border-radius:12px;border:2px solid var(--border);background:var(--surface);font-family:'Jua',sans-serif;font-size:.85rem;cursor:pointer;transition:all .15s;color:var(--txt);text-align:center;}
+.diff-opt.active{background:var(--pnk);border-color:var(--pnk-d);color:#fff;}
+.diff-opt:active{transform:scale(.95);}
+.mt-start{width:100%;padding:14px;border-radius:18px;border:none;background:linear-gradient(135deg,var(--pnk),var(--pnk-d));color:#fff;font-family:'Jua',sans-serif;font-size:1.05rem;cursor:pointer;box-shadow:0 4px 14px rgba(236,72,153,.28);}
+.mt-start:active{transform:scale(.97);}
+
+.next-rnd{display:none;margin:0 14px 10px;padding:13px;border-radius:16px;border:none;background:linear-gradient(135deg,var(--grn),var(--grn-d));color:#fff;font-family:'Jua',sans-serif;font-size:1rem;cursor:pointer;box-shadow:0 4px 14px rgba(34,197,94,.28);}
+.next-rnd.on{display:block;animation:popUp .3s ease;}
+.next-rnd:active{transform:scale(.97);}
+
+.mt-res{display:none;flex-direction:column;gap:12px;padding:14px;align-items:center;}
+.mt-res.on{display:flex;}
+.mt-res-box{background:var(--surface);border-radius:var(--radius);padding:22px 18px;box-shadow:var(--card-shadow);width:100%;text-align:center;border-top:6px solid var(--pnk);animation:popUp .35s cubic-bezier(.175,.885,.32,1.275);}
+.mt-score{font-family:'Jua',sans-serif;font-size:2.8rem;color:var(--pnk);}
+.mt-rstats{display:flex;gap:8px;justify-content:center;margin:10px 0;flex-wrap:wrap;}
+.mt-rstat{background:#fdf2f8;border-radius:12px;padding:8px 13px;}
+.mt-rstat .rv{font-family:'Jua',sans-serif;font-size:1.2rem;color:var(--pnk);display:block;}
+.mt-rstat .rl{font-size:.62rem;color:var(--muted);}
+.mt-rbtns{display:flex;gap:8px;width:100%;}
+.mt-rbtn{flex:1;padding:13px;border-radius:16px;border:none;font-family:'Jua',sans-serif;font-size:.95rem;cursor:pointer;}
+.mt-rbtn:active{transform:scale(.96);}
+.mt-rbtn.again{background:linear-gradient(135deg,var(--pnk),var(--pnk-d));color:#fff;}
+.mt-rbtn.back{background:var(--surface);color:var(--muted);border:2px solid var(--border);}
+
+/* ────────────────── SPEED QUIZ ────────────────── */
+.sq-setup-inner{padding:12px 14px;display:flex;flex-direction:column;gap:12px;}
+.sq-label{font-size:.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.sq-opt-row{display:flex;gap:8px;}
+.sq-opt{flex:1;padding:10px;border-radius:12px;border:2px solid var(--border);background:var(--surface);font-family:'Jua',sans-serif;font-size:.82rem;cursor:pointer;transition:all .15s;color:var(--txt);text-align:center;}
+.sq-opt.active{background:var(--amb);border-color:var(--amb-d);color:#fff;}
+.sq-opt:active{transform:scale(.95);}
+.sq-go{width:100%;padding:14px;border-radius:18px;border:none;background:linear-gradient(135deg,var(--amb),var(--amb-d));color:#fff;font-family:'Jua',sans-serif;font-size:1.05rem;cursor:pointer;box-shadow:0 4px 14px rgba(245,158,11,.28);}
+.sq-go:active{transform:scale(.97);}
+
+.sq-hud{display:flex;gap:7px;padding:10px 14px;align-items:center;flex-shrink:0;}
+.timer-box{background:var(--surface);border-radius:16px;padding:6px 12px;box-shadow:0 2px 8px rgba(0,0,0,.06);flex:2;text-align:center;}
+.tv{font-family:'Jua',sans-serif;font-size:1.6rem;color:var(--txt);line-height:1;}
+.t-bar{height:6px;background:var(--border);border-radius:3px;margin-top:4px;overflow:hidden;}
+.t-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--grn),var(--ind));transition:width 1s linear;}
+.timer-box.danger .tv{color:var(--red);animation:dangerPulse .5s infinite alternate;}
+.timer-box.danger .t-fill{background:linear-gradient(90deg,var(--red),var(--amb));}
+@keyframes dangerPulse{from{transform:scale(1);}to{transform:scale(1.15);}}
+
+.combo-tag{display:none;background:linear-gradient(135deg,var(--amb),#e07010);color:#fff;border-radius:50px;padding:4px 14px;font-size:.78rem;margin:0 14px;text-align:center;font-family:'Jua',sans-serif;}
+.combo-tag.on{display:block;}
+
+.sq-q-box{background:var(--surface);border-radius:var(--radius);margin:4px 14px 8px;padding:18px 16px;box-shadow:var(--card-shadow);border-top:5px solid var(--amb);flex-shrink:0;}
+.q-meta{display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);margin-bottom:6px;}
+.q-stem{font-size:2rem;text-align:center;background:linear-gradient(135deg,#fffbeb,#fff0f5);border-radius:14px;padding:14px 10px;min-height:80px;display:flex;align-items:center;justify-content:center;line-height:1.3;font-family:'Jua',sans-serif;color:var(--txt);}
+.q-stem.sm{font-size:1.4rem;}
+.q-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+.q-btn{padding:12px 8px;border-radius:14px;border:2.5px solid var(--border);background:#fafafa;font-family:'Jua',sans-serif;font-size:.9rem;color:var(--txt);cursor:pointer;transition:all .12s;min-height:52px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.3;word-break:break-word;}
+.q-btn:active:not(:disabled){transform:scale(.96);}
+.q-btn.correct{background:#f0fdf4;border-color:var(--grn);color:var(--grn);}
+.q-btn.wrong{background:#fee2e2;border-color:var(--red);color:var(--red);animation:wrongShake .4s ease;}
+.q-btn:disabled{cursor:default;}
+
+.sq-res{display:none;flex-direction:column;gap:12px;padding:14px;align-items:center;}
+.sq-res.on{display:flex;}
+.sqr-box{background:var(--surface);border-radius:var(--radius);padding:22px 18px;box-shadow:var(--card-shadow);width:100%;text-align:center;border-top:6px solid var(--amb);animation:popUp .35s cubic-bezier(.175,.885,.32,1.275);}
+.sqr-score{font-family:'Jua',sans-serif;font-size:3rem;color:var(--amb);}
+.sqr-stars{font-size:1.6rem;letter-spacing:4px;margin:4px 0;}
+.sq-rstats{display:flex;gap:8px;justify-content:center;margin:10px 0;flex-wrap:wrap;}
+.sq-rstat{background:#fffbeb;border-radius:12px;padding:8px 13px;}
+.sq-rstat .rv{font-family:'Jua',sans-serif;font-size:1.2rem;color:var(--amb);display:block;}
+.sq-rstat .rl{font-size:.62rem;color:var(--muted);}
+.sq-rbtns{display:flex;gap:8px;width:100%;}
+.sq-rbtn{flex:1;padding:13px;border-radius:16px;border:none;font-family:'Jua',sans-serif;font-size:.95rem;cursor:pointer;}
+.sq-rbtn:active{transform:scale(.96);}
+.sq-rbtn.again{background:linear-gradient(135deg,var(--amb),var(--amb-d));color:#fff;}
+.sq-rbtn.back{background:var(--surface);color:var(--muted);border:2px solid var(--border);}
+
+/* ────────────────── FLOATING FX ────────────────── */
+.fx-msg{position:fixed;pointer-events:none;z-index:9999;font-family:'Jua',sans-serif;font-size:1.15rem;animation:fxFloat .85s ease-out forwards;white-space:nowrap;}
+@keyframes fxFloat{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-75px) scale(1.2);}}
+.fx-conf{position:fixed;pointer-events:none;z-index:9998;border-radius:50%;animation:confFall 1.5s ease-in forwards;}
+@keyframes confFall{0%{opacity:1;transform:translateY(-20px) rotate(0);}100%{opacity:0;transform:translateY(100vh) rotate(720deg);}}
+.banner{position:fixed;top:calc(var(--safe-t)+62px);left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--amb),#e07010);color:#fff;padding:8px 22px;border-radius:50px;font-family:'Jua',sans-serif;font-size:.95rem;z-index:9997;box-shadow:0 4px 20px rgba(245,158,11,.4);white-space:nowrap;animation:bannerIn .35s ease,bannerOut .35s ease 1.7s forwards;pointer-events:none;}
+@keyframes bannerIn{from{transform:translateX(-50%) scale(.6);}to{transform:translateX(-50%) scale(1);}}
+@keyframes bannerOut{to{opacity:0;transform:translateX(-50%) scale(.9);}}
+
+/* ────────────────── INSTALL PROMPT ────────────────── */
+.install-bar{display:none;background:linear-gradient(135deg,var(--ind),var(--ind-d));color:#fff;padding:10px 14px;align-items:center;gap:10px;flex-shrink:0;}
+.install-bar.show{display:flex;}
+.install-bar button{background:rgba(255,255,255,.2);border:none;border-radius:10px;padding:6px 14px;color:#fff;font-family:'Jua',sans-serif;font-size:.85rem;cursor:pointer;white-space:nowrap;}
+.install-bar .dismiss{background:none;opacity:.6;padding:4px;}
+
+/* empty state */
+.empty-state{text-align:center;padding:28px 20px;background:var(--surface);border-radius:16px;margin:8px 14px;}
+.empty-state .ei{font-size:2.5rem;margin-bottom:8px;}
+.empty-state .et{font-size:.88rem;color:var(--muted);line-height:1.6;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ════ INSTALL BAR ════ -->
+<div class="install-bar" id="installBar">
+  <span style="flex:1;font-size:.85rem;">📱 홈 화면에 앱으로 추가하기</span>
+  <button onclick="doInstall()">설치</button>
+  <button class="dismiss" onclick="document.getElementById('installBar').classList.remove('show')">✕</button>
+</div>
+
+<!-- ════ HOME ════ -->
+<div id="homeScreen" class="screen">
+  <div class="home-hero">
+    <span class="app-mascot">🦊</span>
+    <div class="app-name">EBS 영단어</div>
+    <div class="app-sub">초등 필수 800단어 · 발음 · 게임 🎮</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><span class="sv" id="hsSets">0</span><span class="sl">완료 세트</span></div>
+    <div class="stat-card"><span class="sv" id="hsWords">0</span><span class="sl">학습 단어</span></div>
+    <div class="stat-card"><span class="sv" id="hsReview">0</span><span class="sl">복습 단어</span></div>
+  </div>
+  <div id="reviewStrip"></div>
+  <div class="section-hd">📚 학습 모드</div>
+  <div class="menu-grid">
+    <div class="menu-cell c-ind" onclick="nav('fc')">
+      <span class="mc-icon">📖</span>
+      <div class="mc-title">플래시카드</div>
+      <div class="mc-desc">20개씩 단계별 학습</div>
+    </div>
+    <div class="menu-cell c-pnk" onclick="nav('mt')">
+      <span class="mc-icon">🎴</span>
+      <div class="mc-title">단어 매칭</div>
+      <div class="mc-desc">짝 맞추기 게임</div>
+    </div>
+    <div class="menu-cell c-amb" onclick="nav('sq')">
+      <span class="mc-icon">⚡</span>
+      <div class="mc-title">스피드 퀴즈</div>
+      <div class="mc-desc">시간 내에 최다 정답!</div>
+    </div>
+    <div class="menu-cell c-grn" onclick="goReviewFromHome()">
+      <span class="mc-icon">🔁</span>
+      <div class="mc-title">오답 복습</div>
+      <div class="mc-desc">모르는 단어만</div>
+      <div class="mc-badge" id="reviewBadge" style="display:none">!</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ FLASHCARD ════ -->
+<div id="fcScreen" class="screen off">
+  <div class="topbar">
+    <button class="tb-back" onclick="goHome()">← 홈</button>
+    <div class="tb-title" id="fcTopTitle">📖 플래시카드</div>
+    <div class="tb-right" id="fcTopRight"></div>
+  </div>
+
+  <!-- set select -->
+  <div id="fcSets">
+    <div class="set-tabs">
+      <button class="set-tab active" onclick="fcTabMode('all',this)">📚 전체</button>
+      <button class="set-tab" onclick="fcTabMode('review',this)">🔁 복습</button>
+    </div>
+    <div class="set-grid" id="fcSetGrid"></div>
+  </div>
+
+  <!-- study -->
+  <div id="fcStudy" class="fc-study" style="display:none;flex-direction:column;">
+    <div class="fc-hud">
+      <div class="pill g">✅ <span id="fcK">0</span></div>
+      <div class="prog-wrap"><div class="prog-fill" id="fcProg" style="width:0%"></div></div>
+      <div class="pill r">❌ <span id="fcD">0</span></div>
+    </div>
+    <div class="scene" id="fcScene">
+      <div class="card-3d" id="fc3d">
+        <div class="face front" onclick="fcFlip()">
+          <div class="f-word" id="fcEng"></div>
+          <button class="speak-btn" onclick="event.stopPropagation();speak(fcWords[fcIdx].eng)">🔊 발음 듣기</button>
+          <div class="f-hint">탭하면 뜻이 나와요</div>
+        </div>
+        <div class="face back" onclick="fcFlip()">
+          <div class="f-back-eng" id="fcBEng"></div>
+          <div class="f-kor" id="fcKor"></div>
+          <div class="f-hint">탭하면 앞으로 돌아가요</div>
+        </div>
+      </div>
+    </div>
+    <div class="swipe-hint">⬅️ 알아요 &nbsp;|&nbsp; 모르면 ➡️</div>
+    <div class="act-row">
+      <button class="act-btn act-k" onclick="fcMark(true)">✅ 알아요!</button>
+      <button class="act-btn act-d" onclick="fcMark(false)">❌ 몰라요</button>
+    </div>
+  </div>
+
+  <!-- result -->
+  <div class="fc-res" id="fcResult">
+    <div class="res-box">
+      <div class="res-emo" id="fcREmoji">🎉</div>
+      <div class="res-ttl" id="fcRTitle">완료!</div>
+      <div class="res-pct" id="fcRPct">0%</div>
+      <div class="res-stats">
+        <div class="res-stat g"><span class="rv" id="fcRK">0</span><span class="rl">✅ 알아요</span></div>
+        <div class="res-stat r"><span class="rv" id="fcRD">0</span><span class="rl">❌ 몰라요</span></div>
+        <div class="res-stat"><span class="rv" id="fcRT">0</span><span class="rl">총 단어</span></div>
+      </div>
+      <div class="dont-scroll" id="fcRList"></div>
+    </div>
+    <div class="res-btns">
+      <button class="res-btn rb-rev" id="fcRRevBtn" onclick="fcDoReview()">🔁 모르는 단어 복습</button>
+      <button class="res-btn rb-again" onclick="fcRestart()">↩️ 다시 학습</button>
+      <button class="res-btn rb-back" onclick="fcBackSets()">← 세트 목록</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MATCHING ════ -->
+<div id="mtScreen" class="screen off">
+  <div class="topbar">
+    <button class="tb-back" onclick="goHome()">← 홈</button>
+    <div class="tb-title">🎴 단어 매칭</div>
+    <div class="tb-right" id="mtTopRight"></div>
+  </div>
+
+  <!-- setup -->
+  <div id="mtSetup">
+    <div class="mt-setup-inner">
+      <div>
+        <div class="sq-label">난이도 (한 라운드 쌍 수)</div>
+        <div class="mt-diff-row">
+          <button class="diff-opt active" onclick="mtDiff(4,this)">🌱 4쌍</button>
+          <button class="diff-opt" onclick="mtDiff(6,this)">🌿 6쌍</button>
+          <button class="diff-opt" onclick="mtDiff(8,this)">🌳 8쌍</button>
+        </div>
+      </div>
+      <button class="mt-start" onclick="mtStart()">🚀 게임 시작!</button>
+    </div>
+  </div>
+
+  <!-- game -->
+  <div id="mtGame" style="display:none;flex-direction:column;flex:1;">
+    <div class="mt-hud">
+      <div class="pill">점수 <span class="pv" id="mtScore">0</span></div>
+      <div class="pill">R<span class="pv" id="mtRound">1</span></div>
+      <div class="pill">❤️<span class="pv" id="mtLives">3</span></div>
+      <div class="pbar"><div class="pbar-fill" id="mtProg" style="width:0%"></div></div>
+    </div>
+    <div class="mt-cols">
+      <div><div class="col-hd">🇺🇸 영어</div><div class="m-col" id="mtEng"></div></div>
+      <div><div class="col-hd">🇰🇷 한국어</div><div class="m-col" id="mtKor"></div></div>
+    </div>
+    <button class="next-rnd" id="mtNext" onclick="mtRound()">다음 라운드 ➡️</button>
+  </div>
+
+  <!-- result -->
+  <div class="mt-res" id="mtResult">
+    <div class="mt-res-box">
+      <div class="res-emo" id="mtREmoji">🏆</div>
+      <div class="res-ttl" id="mtRTitle">완료!</div>
+      <div class="mt-score" id="mtRScore">0점</div>
+      <div class="mt-rstats">
+        <div class="mt-rstat"><span class="rv" id="mtRRound">0</span><span class="rl">라운드</span></div>
+        <div class="mt-rstat"><span class="rv" id="mtRMatched">0</span><span class="rl">✅ 매칭</span></div>
+        <div class="mt-rstat"><span class="rv" id="mtRMiss">0</span><span class="rl">❌ 오답</span></div>
+        <div class="mt-rstat"><span class="rv" id="mtRCombo">0</span><span class="rl">🔥 최고</span></div>
+      </div>
+    </div>
+    <div class="mt-rbtns">
+      <button class="mt-rbtn again" onclick="mtSetupShow()">🔄 다시</button>
+      <button class="mt-rbtn back" onclick="goHome()">🏠 홈</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SPEED QUIZ ════ -->
+<div id="sqScreen" class="screen off">
+  <div class="topbar">
+    <button class="tb-back" onclick="goHome()">← 홈</button>
+    <div class="tb-title">⚡ 스피드 퀴즈</div>
+    <div class="tb-right" id="sqTopRight"></div>
+  </div>
+
+  <!-- setup -->
+  <div id="sqSetup">
+    <div class="sq-setup-inner">
+      <div>
+        <div class="sq-label">📝 퀴즈 방향</div>
+        <div class="sq-opt-row">
+          <button class="sq-opt active" onclick="sqModeSet('k2e',this)">🇰🇷→🇺🇸 뜻→영단어</button>
+          <button class="sq-opt" onclick="sqModeSet('e2k',this)">🇺🇸→🇰🇷 영단어→뜻</button>
+        </div>
+      </div>
+      <div>
+        <div class="sq-label">⏱️ 제한 시간</div>
+        <div class="sq-opt-row">
+          <button class="sq-opt" onclick="sqTimeSet(30,this)">30초</button>
+          <button class="sq-opt active" onclick="sqTimeSet(60,this)">60초</button>
+          <button class="sq-opt" onclick="sqTimeSet(90,this)">90초</button>
+          <button class="sq-opt" onclick="sqTimeSet(120,this)">2분</button>
+        </div>
+      </div>
+      <button class="sq-go" onclick="sqStart()">🚀 시작!</button>
+    </div>
+  </div>
+
+  <!-- game -->
+  <div id="sqGame" style="display:none;flex-direction:column;">
+    <div class="sq-hud">
+      <div class="pill">점수 <span class="pv" id="sqScore">0</span></div>
+      <div class="pill">🔥<span class="pv" id="sqComboDisp">0</span></div>
+      <div class="timer-box" id="sqTimerBox">
+        <div class="tv" id="sqTimer">60</div>
+        <div class="t-bar"><div class="t-fill" id="sqTimerFill" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="combo-tag" id="sqCTag"></div>
+    <div class="sq-q-box">
+      <div class="q-meta">
+        <span id="sqQLabel">방향</span>
+        <span id="sqQNum">문제 1</span>
+      </div>
+      <div class="q-stem" id="sqStem"></div>
+      <div class="q-grid" id="sqGrid"></div>
+    </div>
+  </div>
+
+  <!-- result -->
+  <div class="sq-res" id="sqResult">
+    <div class="sqr-box">
+      <div class="res-emo" id="sqREmoji">🏆</div>
+      <div class="res-ttl" id="sqRTitle">완료!</div>
+      <div class="sqr-score" id="sqRScore">0점</div>
+      <div class="sqr-stars" id="sqRStars">⭐⭐⭐</div>
+      <div class="sq-rstats">
+        <div class="sq-rstat"><span class="rv" id="sqRC">0</span><span class="rl">✅ 정답</span></div>
+        <div class="sq-rstat"><span class="rv" id="sqRW">0</span><span class="rl">❌ 오답</span></div>
+        <div class="sq-rstat"><span class="rv" id="sqRCombo">0</span><span class="rl">🔥 최고콤보</span></div>
+        <div class="sq-rstat"><span class="rv" id="sqRAcc">0%</span><span class="rl">🎯 정확도</span></div>
+      </div>
+      <div class="dont-scroll" id="sqRList"></div>
+    </div>
+    <div class="sq-rbtns">
+      <button class="sq-rbtn again" onclick="sqReset()">🔄 다시</button>
+      <button class="sq-rbtn back" onclick="goHome()">🏠 홈</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ BOTTOM NAV ════ -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nHome" onclick="goHome()"><div class="nav-icon">🏠</div><div class="nav-label">홈</div></button>
+  <button class="nav-btn" id="nFc" onclick="nav('fc')"><div class="nav-icon">📖</div><div class="nav-label">플래시카드</div></button>
+  <button class="nav-btn" id="nMt" onclick="nav('mt')"><div class="nav-icon">🎴</div><div class="nav-label">매칭</div></button>
+  <button class="nav-btn" id="nSq" onclick="nav('sq')"><div class="nav-icon">⚡</div><div class="nav-label">스피드퀴즈</div></button>
+</nav>
+</div><!-- /app -->
+
+<script>
+/* ══════════════════════ DATA ══════════════════════ */
+const W=[{"eng": "a", "kor": "하나의"}, {"eng": "bike", "kor": "자전거"}, {"eng": "club", "kor": "클럽"}, {"eng": "eleven", "kor": "11"}, {"eng": "gray", "kor": "회색"}, {"eng": "king", "kor": "왕"}, {"eng": "newspaper", "kor": "신문"}, {"eng": "read", "kor": "읽다"}, {"eng": "south", "kor": "남쪽"}, {"eng": "trip", "kor": "여행"}, {"eng": "about", "kor": "~에 관하여"}, {"eng": "bill", "kor": "청구서"}, {"eng": "coat", "kor": "코트"}, {"eng": "end", "kor": "끝"}, {"eng": "great", "kor": "큰"}, {"eng": "kiss", "kor": "키스"}, {"eng": "next", "kor": "다음의"}, {"eng": "ready", "kor": "준비가 된"}, {"eng": "space", "kor": "공간"}, {"eng": "truck", "kor": "트럭"}, {"eng": "above", "kor": "~보다 위에"}, {"eng": "bird", "kor": "새"}, {"eng": "coffee", "kor": "커피"}, {"eng": "energy", "kor": "에너지"}, {"eng": "green", "kor": "녹색"}, {"eng": "kitchen", "kor": "부엌"}, {"eng": "nice", "kor": "좋은"}, {"eng": "recreation", "kor": "오락"}, {"eng": "spaghetti", "kor": "스파게티"}, {"eng": "true", "kor": "정말의"}, {"eng": "across", "kor": "~을 가로질러/건너서"}, {"eng": "birth", "kor": "태어남"}, {"eng": "cold", "kor": "추운"}, {"eng": "enough", "kor": "충분한"}, {"eng": "ground", "kor": "땅"}, {"eng": "knife", "kor": "작은 칼"}, {"eng": "night", "kor": "밤"}, {"eng": "red", "kor": "빨간"}, {"eng": "speak", "kor": "말하다"}, {"eng": "try", "kor": "노력하다"}, {"eng": "act", "kor": "행동"}, {"eng": "biscuit", "kor": "비스킷"}, {"eng": "collect", "kor": "모으다"}, {"eng": "enter", "kor": "~에 들어가다"}, {"eng": "group", "kor": "무리"}, {"eng": "know", "kor": "알다"}, {"eng": "nine", "kor": "9"}, {"eng": "remember", "kor": "기억하다"}, {"eng": "speed", "kor": "빠르기"}, {"eng": "turn", "kor": "돌다"}, {"eng": "add", "kor": "더하다"}, {"eng": "black", "kor": "검은"}, {"eng": "college", "kor": "대학(교)"}, {"eng": "evening", "kor": "저녁"}, {"eng": "grow", "kor": "자라다"}, {"eng": "lady", "kor": "숙녀"}, {"eng": "no", "kor": "아니"}, {"eng": "restaurant", "kor": "식당"}, {"eng": "spoon", "kor": "숟가락"}, {"eng": "twelve", "kor": "12"}, {"eng": "address", "kor": "주소"}, {"eng": "blood", "kor": "피"}, {"eng": "color", "kor": "색"}, {"eng": "every", "kor": "모든"}, {"eng": "guess", "kor": "어림짐작하다"}, {"eng": "lake", "kor": "호수"}, {"eng": "north", "kor": "북"}, {"eng": "restroom", "kor": "화장실"}, {"eng": "sport", "kor": "운동"}, {"eng": "twenty", "kor": "20"}, {"eng": "adult", "kor": "어른"}, {"eng": "blue", "kor": "파란"}, {"eng": "come", "kor": "오다"}, {"eng": "example", "kor": "예"}, {"eng": "guitar", "kor": "(악기) 기타"}, {"eng": "land", "kor": "땅"}, {"eng": "nose", "kor": "코"}, {"eng": "return", "kor": "돌아오다"}, {"eng": "spring", "kor": "봄"}, {"eng": "twenty-first", "kor": "스물한 번째의"}, {"eng": "afraid", "kor": "~을 두려워하는/꺼리는"}, {"eng": "board", "kor": "판자"}, {"eng": "comic", "kor": "웃기는"}, {"eng": "exercise", "kor": "운동"}, {"eng": "gum", "kor": "고무"}, {"eng": "large", "kor": "넓은"}, {"eng": "not", "kor": "~아니다"}, {"eng": "ribbon", "kor": "리본"}, {"eng": "staff", "kor": "직원"}, {"eng": "twenty-second", "kor": "스물두 번째의"}, {"eng": "after", "kor": "~의 뒤에"}, {"eng": "boat", "kor": "보트"}, {"eng": "company", "kor": "회사"}, {"eng": "eye", "kor": "눈"}, {"eng": "guy", "kor": "남자"}, {"eng": "laser", "kor": "레이저"}, {"eng": "note", "kor": "필기"}, {"eng": "rich", "kor": "부자의"}, {"eng": "stand", "kor": "서다"}, {"eng": "twenty-third", "kor": "스물세 번째의"}, {"eng": "afternoon", "kor": "오후"}, {"eng": "body", "kor": "몸"}, {"eng": "compute", "kor": "계산하다"}, {"eng": "face", "kor": "얼굴"}, {"eng": "habit", "kor": "버릇"}, {"eng": "last", "kor": "최후의"}, {"eng": "notebook", "kor": "공책"}, {"eng": "right", "kor": "옳은"}, {"eng": "star", "kor": "별"}, {"eng": "twice", "kor": "2회"}, {"eng": "again", "kor": "다시"}, {"eng": "bone", "kor": "뼈"}, {"eng": "condition", "kor": "상태"}, {"eng": "fact", "kor": "사실"}, {"eng": "hair", "kor": "머리카락"}, {"eng": "late", "kor": "늦은"}, {"eng": "nothing", "kor": "아무것도 아닌 것"}, {"eng": "ring", "kor": "반지"}, {"eng": "start", "kor": "출발하다"}, {"eng": "two", "kor": "2"}, {"eng": "against", "kor": "~에 반대하여"}, {"eng": "book", "kor": "책"}, {"eng": "congratulate", "kor": "축하하다"}, {"eng": "fail", "kor": "실패하다"}, {"eng": "hamburger", "kor": "햄버거"}, {"eng": "lazy", "kor": "게으른"}, {"eng": "now", "kor": "지금"}, {"eng": "river", "kor": "강"}, {"eng": "stay", "kor": "머무르다"}, {"eng": "type", "kor": "유형"}, {"eng": "age", "kor": "나이"}, {"eng": "borrow", "kor": "빌리다"}, {"eng": "control", "kor": "통제"}, {"eng": "fall", "kor": "떨어지다"}, {"eng": "hand", "kor": "손"}, {"eng": "learn", "kor": "배우다"}, {"eng": "number", "kor": "수"}, {"eng": "road", "kor": "길"}, {"eng": "steak", "kor": "스테이크"}, {"eng": "ugly", "kor": "못생긴"}, {"eng": "ago", "kor": "(지금부터) ~ 전에/이전에"}, {"eng": "both", "kor": "둘 다"}, {"eng": "cook", "kor": "요리하다"}, {"eng": "family", "kor": "가족"}, {"eng": "hang", "kor": "걸다"}, {"eng": "left", "kor": "왼쪽의"}, {"eng": "nurse", "kor": "간호사"}, {"eng": "robot", "kor": "로봇"}, {"eng": "stone", "kor": "돌"}, {"eng": "umbrella", "kor": "우산"}, {"eng": "agree", "kor": "동의하다"}, {"eng": "bottle", "kor": "(액체를 담는) 병"}, {"eng": "cookie", "kor": "쿠키"}, {"eng": "fan", "kor": "선풍기"}, {"eng": "happy", "kor": "기쁜"}, {"eng": "leg", "kor": "다리"}, {"eng": "of", "kor": "~의"}, {"eng": "rock", "kor": "바위"}, {"eng": "stop", "kor": "멈추다"}, {"eng": "uncle", "kor": "삼촌"}, {"eng": "ahead", "kor": "앞쪽에"}, {"eng": "bottom", "kor": "밑바닥"}, {"eng": "cool", "kor": "시원한"}, {"eng": "far", "kor": "먼"}, {"eng": "hard", "kor": "단단한"}, {"eng": "lesson", "kor": "수업"}, {"eng": "off", "kor": "~에서 떨어져/벗어나/내려서"}, {"eng": "room", "kor": "방"}, {"eng": "store", "kor": "가게"}, {"eng": "under", "kor": "~아래에/바로 밑에"}, {"eng": "air", "kor": "공기"}, {"eng": "box", "kor": "박스"}, {"eng": "corner", "kor": "구석"}, {"eng": "farm", "kor": "농장"}, {"eng": "hat", "kor": "모자"}, {"eng": "letter", "kor": "글자"}, {"eng": "office", "kor": "사무실"}, {"eng": "rose", "kor": "장미"}, {"eng": "story", "kor": "이야기"}, {"eng": "understand", "kor": "이해하다"}, {"eng": "airplane", "kor": "비행기"}, {"eng": "boy", "kor": "소년"}, {"eng": "cost", "kor": "값"}, {"eng": "fast", "kor": "빠른"}, {"eng": "hate", "kor": "미워하다"}, {"eng": "library", "kor": "도서관"}, {"eng": "often", "kor": "자주"}, {"eng": "run", "kor": "달리다"}, {"eng": "street", "kor": "거리"}, {"eng": "up", "kor": "위로"}, {"eng": "album", "kor": "(음악) 앨범"}, {"eng": "brave", "kor": "용감한"}, {"eng": "could", "kor": "(can의 과거형) ~할 수 있었다"}, {"eng": "fat", "kor": "뚱뚱한"}, {"eng": "have", "kor": "가지다"}, {"eng": "lie", "kor": "누워 있다"}, {"eng": "oil", "kor": "기름"}, {"eng": "sad", "kor": "슬픈"}, {"eng": "strong", "kor": "강한"}, {"eng": "use", "kor": "쓰다"}, {"eng": "all", "kor": "모든"}, {"eng": "bread", "kor": "빵"}, {"eng": "country", "kor": "나라"}, {"eng": "father", "kor": "아버지"}, {"eng": "he", "kor": "그"}, {"eng": "life", "kor": "삶"}, {"eng": "okay", "kor": "네"}, {"eng": "safe", "kor": "안전한"}, {"eng": "study", "kor": "공부하다"}, {"eng": "vegetable", "kor": "채소"}, {"eng": "almost", "kor": "거의"}, {"eng": "break", "kor": "깨뜨리다"}, {"eng": "couple", "kor": "한 쌍"}, {"eng": "favorite", "kor": "마음에 드는"}, {"eng": "head", "kor": "머리"}, {"eng": "light", "kor": "빛"}, {"eng": "old", "kor": "늙은"}, {"eng": "salad", "kor": "샐러드"}, {"eng": "style", "kor": "방식"}, {"eng": "very", "kor": "매우"}, {"eng": "alone", "kor": "혼자의"}, {"eng": "breakfast", "kor": "아침 식사"}, {"eng": "course", "kor": "진로"}, {"eng": "feel", "kor": "느끼다"}, {"eng": "heart", "kor": "심장"}, {"eng": "like", "kor": "좋아하다"}, {"eng": "on", "kor": "(날짜) ~에"}, {"eng": "sale", "kor": "판매"}, {"eng": "subway", "kor": "지하철"}, {"eng": "video", "kor": "영상"}, {"eng": "along", "kor": "~을 따라서/끼고"}, {"eng": "bridge", "kor": "다리"}, {"eng": "court", "kor": "안마당"}, {"eng": "festival", "kor": "페스티벌"}, {"eng": "heat", "kor": "열"}, {"eng": "line", "kor": "선"}, {"eng": "one", "kor": "1"}, {"eng": "salt", "kor": "소금"}, {"eng": "sugar", "kor": "설탕"}, {"eng": "violin", "kor": "바이올린"}, {"eng": "already", "kor": "이미"}, {"eng": "bright", "kor": "밝은"}, {"eng": "cousin", "kor": "사촌"}, {"eng": "field", "kor": "들판"}, {"eng": "heavy", "kor": "무거운"}, {"eng": "lion", "kor": "사자"}, {"eng": "only", "kor": "유일한"}, {"eng": "same", "kor": "같은"}, {"eng": "summer", "kor": "여름"}, {"eng": "visit", "kor": "방문하다"}, {"eng": "alright", "kor": "괜찮은"}, {"eng": "bring", "kor": "가져오다"}, {"eng": "cover", "kor": "덮다"}, {"eng": "fight", "kor": "싸움"}, {"eng": "hello", "kor": "안녕하세요"}, {"eng": "lip", "kor": "입술"}, {"eng": "open", "kor": "열린"}, {"eng": "sand", "kor": "모래"}, {"eng": "sun", "kor": "해"}, {"eng": "voice", "kor": "목소리"}, {"eng": "also", "kor": "(~도) 또한"}, {"eng": "brother", "kor": "형제(형 또는 아우)"}, {"eng": "cow", "kor": "암소"}, {"eng": "file", "kor": "파일"}, {"eng": "helmet", "kor": "헬멧"}, {"eng": "listen", "kor": "듣다"}, {"eng": "or", "kor": "또는"}, {"eng": "sandwich", "kor": "샌드위치"}, {"eng": "sure", "kor": "확실한"}, {"eng": "wait", "kor": "기다리다"}, {"eng": "always", "kor": "늘"}, {"eng": "brown", "kor": "갈색"}, {"eng": "crayon", "kor": "크레용"}, {"eng": "fill", "kor": "채우다"}, {"eng": "help", "kor": "돕다"}, {"eng": "little", "kor": "작은"}, {"eng": "orange", "kor": "오렌지"}, {"eng": "save", "kor": "구하다"}, {"eng": "swim", "kor": "헤엄치다"}, {"eng": "wake", "kor": "깨다"}, {"eng": "and", "kor": "~와/과"}, {"eng": "brush", "kor": "붓"}, {"eng": "cream", "kor": "(우유로 만든) 크림"}, {"eng": "film", "kor": "엷은 막"}, {"eng": "here", "kor": "여기에"}, {"eng": "live", "kor": "살다"}, {"eng": "out", "kor": "밖에"}, {"eng": "say", "kor": "말하다"}, {"eng": "table", "kor": "식탁"}, {"eng": "walk", "kor": "걷다"}, {"eng": "animal", "kor": "동물"}, {"eng": "build", "kor": "(건물을) 짓다"}, {"eng": "cross", "kor": "십자형"}, {"eng": "find", "kor": "찾아내다"}, {"eng": "hero", "kor": "영웅"}, {"eng": "long", "kor": "긴"}, {"eng": "over", "kor": "~위쪽에"}, {"eng": "school", "kor": "학교"}, {"eng": "tail", "kor": "꼬리"}, {"eng": "wall", "kor": "벽"}, {"eng": "another", "kor": "또 하나의"}, {"eng": "burn", "kor": "(불에) 타다"}, {"eng": "cry", "kor": "울다"}, {"eng": "fine", "kor": "좋은"}, {"eng": "high", "kor": "높은"}, {"eng": "look", "kor": "보다"}, {"eng": "page", "kor": "쪽"}, {"eng": "science", "kor": "과학"}, {"eng": "take", "kor": "잡다"}, {"eng": "want", "kor": "원하다"}, {"eng": "answer", "kor": "대답"}, {"eng": "bus", "kor": "버스"}, {"eng": "culture", "kor": "문화"}, {"eng": "finger", "kor": "손가락"}, {"eng": "hike", "kor": "하이킹을 하다"}, {"eng": "love", "kor": "사랑"}, {"eng": "paint", "kor": "페인트"}, {"eng": "scissors", "kor": "가위"}, {"eng": "talk", "kor": "말하다"}, {"eng": "war", "kor": "전쟁"}, {"eng": "any", "kor": "어떤"}, {"eng": "business", "kor": "사업"}, {"eng": "cup", "kor": "컵"}, {"eng": "finish", "kor": "끝내다"}, {"eng": "hill", "kor": "작은 산"}, {"eng": "low", "kor": "낮은"}, {"eng": "pants", "kor": "바지"}, {"eng": "score", "kor": "득점"}, {"eng": "tall", "kor": "키가 큰"}, {"eng": "warm", "kor": "따뜻한"}, {"eng": "apartment", "kor": "아파트"}, {"eng": "busy", "kor": "바쁜"}, {"eng": "curtain", "kor": "커튼"}, {"eng": "fire", "kor": "불"}, {"eng": "history", "kor": "역사"}, {"eng": "luck", "kor": "운"}, {"eng": "paper", "kor": "종이"}, {"eng": "sea", "kor": "바다"}, {"eng": "tape", "kor": "납작한 끈"}, {"eng": "wash", "kor": "씻다"}, {"eng": "apple", "kor": "사과"}, {"eng": "but", "kor": "그러나"}, {"eng": "customer", "kor": "손님"}, {"eng": "first", "kor": "첫째의"}, {"eng": "hit", "kor": "때리다"}, {"eng": "lunch", "kor": "점심"}, {"eng": "parent", "kor": "부모 (중 한 분)"}, {"eng": "season", "kor": "계절"}, {"eng": "taste", "kor": "맛"}, {"eng": "watch", "kor": "보다"}, {"eng": "area", "kor": "지역"}, {"eng": "butter", "kor": "버터"}, {"eng": "cut", "kor": "베다"}, {"eng": "fish", "kor": "물고기"}, {"eng": "hobby", "kor": "취미"}, {"eng": "mad", "kor": "미친"}, {"eng": "park", "kor": "공원"}, {"eng": "second", "kor": "둘째의"}, {"eng": "taxi", "kor": "택시"}, {"eng": "water", "kor": "물"}, {"eng": "arm", "kor": "팔"}, {"eng": "button", "kor": "(옷의) 단추"}, {"eng": "dance", "kor": "춤추다"}, {"eng": "five", "kor": "5"}, {"eng": "hold", "kor": "들다"}, {"eng": "mail", "kor": "우편"}, {"eng": "part", "kor": "부분"}, {"eng": "see", "kor": "보다"}, {"eng": "teach", "kor": "가르치다"}, {"eng": "watermelon", "kor": "수박"}, {"eng": "around", "kor": "주위에"}, {"eng": "buy", "kor": "사다"}, {"eng": "danger", "kor": "위험"}, {"eng": "fix", "kor": "고정하다"}, {"eng": "holiday", "kor": "휴일"}, {"eng": "make", "kor": "만들다"}, {"eng": "partner", "kor": "동반자"}, {"eng": "sell", "kor": "팔다"}, {"eng": "team", "kor": "팀"}, {"eng": "way", "kor": "길"}, {"eng": "arrive", "kor": "도착하다"}, {"eng": "by", "kor": "~곁에"}, {"eng": "dark", "kor": "어두운"}, {"eng": "floor", "kor": "바닥"}, {"eng": "home", "kor": "집"}, {"eng": "man", "kor": "남자"}, {"eng": "party", "kor": "파티"}, {"eng": "send", "kor": "보내다"}, {"eng": "telephone", "kor": "전화기"}, {"eng": "we", "kor": "우리"}, {"eng": "art", "kor": "예술"}, {"eng": "cake", "kor": "케이크"}, {"eng": "date", "kor": "날짜"}, {"eng": "flower", "kor": "꽃"}, {"eng": "homework", "kor": "숙제"}, {"eng": "many", "kor": "많은"}, {"eng": "pass", "kor": "지나가다"}, {"eng": "service", "kor": "봉사"}, {"eng": "television", "kor": "텔레비전"}, {"eng": "wear", "kor": "입고 있다"}, {"eng": "as", "kor": "~로서"}, {"eng": "call", "kor": "부르다"}, {"eng": "daughter", "kor": "딸"}, {"eng": "fly", "kor": "날다"}, {"eng": "honest", "kor": "정직한"}, {"eng": "map", "kor": "지도"}, {"eng": "pay", "kor": "치르다"}, {"eng": "set", "kor": "놓다"}, {"eng": "tell", "kor": "말하다"}, {"eng": "weather", "kor": "날씨"}, {"eng": "ask", "kor": "~에게 ···을 묻다/질문하다"}, {"eng": "camera", "kor": "카메라"}, {"eng": "day", "kor": "낮"}, {"eng": "focus", "kor": "초점"}, {"eng": "hope", "kor": "희망"}, {"eng": "marathon", "kor": "마라톤"}, {"eng": "pen", "kor": "펜"}, {"eng": "seven", "kor": "7"}, {"eng": "ten", "kor": "10"}, {"eng": "website", "kor": "웹사이트"}, {"eng": "at", "kor": "(장소/시간/나이) ~에(서)"}, {"eng": "camp", "kor": "야영"}, {"eng": "dead", "kor": "죽은"}, {"eng": "food", "kor": "음식"}, {"eng": "horse", "kor": "말"}, {"eng": "market", "kor": "시장"}, {"eng": "pencil", "kor": "연필"}, {"eng": "she", "kor": "그녀"}, {"eng": "tennis", "kor": "테니스"}, {"eng": "wedding", "kor": "결혼"}, {"eng": "aunt", "kor": "아줌마"}, {"eng": "campaign", "kor": "캠페인"}, {"eng": "death", "kor": "죽음"}, {"eng": "fool", "kor": "바보"}, {"eng": "hospital", "kor": "병원"}, {"eng": "marry", "kor": "~와 결혼하다"}, {"eng": "people", "kor": "사람들"}, {"eng": "ship", "kor": "배"}, {"eng": "tent", "kor": "천막"}, {"eng": "week", "kor": "주"}, {"eng": "autumn", "kor": "가을"}, {"eng": "can", "kor": "~할 수 있다"}, {"eng": "decide", "kor": "결심하다"}, {"eng": "foot", "kor": "발"}, {"eng": "hot", "kor": "뜨거운"}, {"eng": "mathematics", "kor": "수학"}, {"eng": "piano", "kor": "피아노"}, {"eng": "shirt", "kor": "셔츠"}, {"eng": "test", "kor": "시험"}, {"eng": "weekend", "kor": "주말"}, {"eng": "away", "kor": "(시공간적으로) 떨어져"}, {"eng": "candy", "kor": "사탕"}, {"eng": "deep", "kor": "깊은"}, {"eng": "football", "kor": "풋볼"}, {"eng": "hour", "kor": "시간"}, {"eng": "may", "kor": "~할지도 모르다"}, {"eng": "pick", "kor": "고르다"}, {"eng": "shoe", "kor": "신"}, {"eng": "textbook", "kor": "교과서"}, {"eng": "weight", "kor": "무게"}, {"eng": "baby", "kor": "갓난아이"}, {"eng": "cap", "kor": "모자"}, {"eng": "delicious", "kor": "매우 맛있는"}, {"eng": "for", "kor": "~을 위해"}, {"eng": "house", "kor": "집"}, {"eng": "meat", "kor": "고기"}, {"eng": "picture", "kor": "그림"}, {"eng": "shop", "kor": "가게"}, {"eng": "than", "kor": "~보다"}, {"eng": "welcome", "kor": "맞이하다"}, {"eng": "back", "kor": "등"}, {"eng": "car", "kor": "자동차"}, {"eng": "design", "kor": "계획"}, {"eng": "forest", "kor": "숲"}, {"eng": "how", "kor": "어떻게"}, {"eng": "medal", "kor": "메달"}, {"eng": "pig", "kor": "돼지"}, {"eng": "short", "kor": "짧은"}, {"eng": "thank", "kor": "~에게 감사하다/고마워하다"}, {"eng": "well", "kor": "잘"}, {"eng": "bad", "kor": "나쁜"}, {"eng": "card", "kor": "카드"}, {"eng": "desk", "kor": "책상"}, {"eng": "forget", "kor": "잊다"}, {"eng": "however", "kor": "그러나"}, {"eng": "meet", "kor": "만나다"}, {"eng": "pilot", "kor": "조종사"}, {"eng": "should", "kor": "~해야 한다"}, {"eng": "that", "kor": "그것"}, {"eng": "west", "kor": "서쪽"}, {"eng": "badminton", "kor": "배드민턴"}, {"eng": "care", "kor": "돌봄"}, {"eng": "dialogue", "kor": "대화"}, {"eng": "fork", "kor": "포크"}, {"eng": "human", "kor": "인간"}, {"eng": "member", "kor": "회원"}, {"eng": "pink", "kor": "분홍색"}, {"eng": "show", "kor": "보여주다"}, {"eng": "the", "kor": "그"}, {"eng": "wet", "kor": "젖은"}, {"eng": "bag", "kor": "자루"}, {"eng": "carrot", "kor": "당근"}, {"eng": "die", "kor": "죽다"}, {"eng": "form", "kor": "모양"}, {"eng": "hundred", "kor": "100"}, {"eng": "memory", "kor": "기억"}, {"eng": "pizza", "kor": "피자"}, {"eng": "shy", "kor": "수줍은"}, {"eng": "there", "kor": "그곳에서"}, {"eng": "what", "kor": "무엇"}, {"eng": "bake", "kor": "굽다"}, {"eng": "carry", "kor": "나르다"}, {"eng": "difficult", "kor": "어려운"}, {"eng": "four", "kor": "4"}, {"eng": "hunt", "kor": "사냥하다"}, {"eng": "middle", "kor": "중앙"}, {"eng": "place", "kor": "장소"}, {"eng": "sick", "kor": "아픈"}, {"eng": "they", "kor": "그들"}, {"eng": "when", "kor": "언제"}, {"eng": "ball", "kor": "공"}, {"eng": "case", "kor": "상자"}, {"eng": "dinner", "kor": "정찬"}, {"eng": "fox", "kor": "여우"}, {"eng": "hurry", "kor": "서두르다"}, {"eng": "might", "kor": "(may의 과거형) ~할지도 모르다"}, {"eng": "plan", "kor": "계획"}, {"eng": "side", "kor": "쪽"}, {"eng": "thing", "kor": "물건"}, {"eng": "where", "kor": "어디에"}, {"eng": "banana", "kor": "바나나"}, {"eng": "cash", "kor": "현금"}, {"eng": "discuss", "kor": "논의하다"}, {"eng": "free", "kor": "자유로운"}, {"eng": "husband", "kor": "남편"}, {"eng": "milk", "kor": "젖"}, {"eng": "plastic", "kor": "플라스틱의"}, {"eng": "sing", "kor": "노래하다"}, {"eng": "think", "kor": "생각하다"}, {"eng": "white", "kor": "흰색"}, {"eng": "bank", "kor": "은행"}, {"eng": "cat", "kor": "고양이"}, {"eng": "do", "kor": "하다"}, {"eng": "fresh", "kor": "신선한"}, {"eng": "I", "kor": "나는"}, {"eng": "mind", "kor": "마음"}, {"eng": "play", "kor": "놀다"}, {"eng": "sister", "kor": "언니"}, {"eng": "third", "kor": "셋째의"}, {"eng": "who", "kor": "누구"}, {"eng": "base", "kor": "토대"}, {"eng": "catch", "kor": "잡다"}, {"eng": "doctor", "kor": "의사"}, {"eng": "friend", "kor": "벗"}, {"eng": "ice", "kor": "얼음"}, {"eng": "miss", "kor": "놓치다"}, {"eng": "please", "kor": "부디"}, {"eng": "sit", "kor": "앉다"}, {"eng": "thirst", "kor": "목마름"}, {"eng": "why", "kor": "왜"}, {"eng": "baseball", "kor": "야구"}, {"eng": "center", "kor": "중심"}, {"eng": "dog", "kor": "개"}, {"eng": "from", "kor": "~에서/으로부터"}, {"eng": "idea", "kor": "생각"}, {"eng": "model", "kor": "모형"}, {"eng": "point", "kor": "뾰족한 끝"}, {"eng": "six", "kor": "6"}, {"eng": "thirteen", "kor": "13"}, {"eng": "wife", "kor": "아내"}, {"eng": "basket", "kor": "바구니"}, {"eng": "certain", "kor": "확실한"}, {"eng": "doll", "kor": "인형"}, {"eng": "front", "kor": "앞"}, {"eng": "if", "kor": "만약에/만일 ~이라면"}, {"eng": "money", "kor": "돈"}, {"eng": "police", "kor": "경찰"}, {"eng": "size", "kor": "크기"}, {"eng": "thirty", "kor": "30"}, {"eng": "will", "kor": "~할 것이다"}, {"eng": "basketball", "kor": "농구"}, {"eng": "chair", "kor": "의자"}, {"eng": "door", "kor": "문"}, {"eng": "fruit", "kor": "과일"}, {"eng": "image", "kor": "이미지"}, {"eng": "monkey", "kor": "원숭이"}, {"eng": "poor", "kor": "가난한"}, {"eng": "skate", "kor": "스케이트"}, {"eng": "this", "kor": "이것"}, {"eng": "win", "kor": "이기다"}, {"eng": "bat", "kor": "방망이"}, {"eng": "chance", "kor": "기회"}, {"eng": "double", "kor": "두 배의"}, {"eng": "full", "kor": "가득 찬"}, {"eng": "in", "kor": "~안에"}, {"eng": "month", "kor": "월"}, {"eng": "potato", "kor": "감자"}, {"eng": "ski", "kor": "스키"}, {"eng": "three", "kor": "3"}, {"eng": "wind", "kor": "바람"}, {"eng": "bath", "kor": "목욕"}, {"eng": "change", "kor": "변화하다"}, {"eng": "doughnut", "kor": "도넛"}, {"eng": "fun", "kor": "재미"}, {"eng": "inside", "kor": "~안에"}, {"eng": "moon", "kor": "(천체의) 달"}, {"eng": "power", "kor": "힘"}, {"eng": "skin", "kor": "피부"}, {"eng": "ticket", "kor": "표"}, {"eng": "window", "kor": "창"}, {"eng": "be", "kor": "~이다"}, {"eng": "cheap", "kor": "(값이) 싼"}, {"eng": "down", "kor": "아래로"}, {"eng": "future", "kor": "미래"}, {"eng": "internet", "kor": "인터넷"}, {"eng": "morning", "kor": "아침"}, {"eng": "present", "kor": "현재"}, {"eng": "skirt", "kor": "치마"}, {"eng": "tiger", "kor": "호랑이"}, {"eng": "wine", "kor": "포도주"}, {"eng": "beach", "kor": "해변"}, {"eng": "check", "kor": "확인"}, {"eng": "draw", "kor": "그리다"}, {"eng": "game", "kor": "놀이"}, {"eng": "into", "kor": "~안으로"}, {"eng": "mother", "kor": "어머니"}, {"eng": "pretty", "kor": "예쁜"}, {"eng": "sky", "kor": "하늘"}, {"eng": "time", "kor": "시간"}, {"eng": "winter", "kor": "겨울"}, {"eng": "bear", "kor": "곰"}, {"eng": "cheese", "kor": "치즈"}, {"eng": "dream", "kor": "꿈"}, {"eng": "garden", "kor": "뜰"}, {"eng": "introduce", "kor": "소개하다"}, {"eng": "mountain", "kor": "산"}, {"eng": "prince", "kor": "왕자"}, {"eng": "sleep", "kor": "잠"}, {"eng": "tire", "kor": "지치게 하다"}, {"eng": "wish", "kor": "바라다"}, {"eng": "beauty", "kor": "아름다움"}, {"eng": "chicken", "kor": "닭"}, {"eng": "dress", "kor": "의복"}, {"eng": "gas", "kor": "기체"}, {"eng": "invite", "kor": "초대하다"}, {"eng": "mouse", "kor": "쥐"}, {"eng": "print", "kor": "인쇄하다"}, {"eng": "slow", "kor": "느린"}, {"eng": "to", "kor": "~까지"}, {"eng": "with", "kor": "~와"}, {"eng": "because", "kor": "~이므로"}, {"eng": "child", "kor": "아이"}, {"eng": "drink", "kor": "마시다"}, {"eng": "gentleman", "kor": "신사"}, {"eng": "issue", "kor": "문제"}, {"eng": "mouth", "kor": "입"}, {"eng": "problem", "kor": "문제"}, {"eng": "small", "kor": "작은"}, {"eng": "today", "kor": "오늘"}, {"eng": "woman", "kor": "여자"}, {"eng": "become", "kor": "~이 되다"}, {"eng": "chocolate", "kor": "초콜릿"}, {"eng": "drive", "kor": "운전하다"}, {"eng": "get", "kor": "얻다"}, {"eng": "it", "kor": "그것"}, {"eng": "move", "kor": "움직이다"}, {"eng": "program", "kor": "프로그램"}, {"eng": "smell", "kor": "냄새"}, {"eng": "together", "kor": "함께"}, {"eng": "wood", "kor": "나무"}, {"eng": "bed", "kor": "침대"}, {"eng": "choose", "kor": "고르다"}, {"eng": "drop", "kor": "떨어지다"}, {"eng": "girl", "kor": "소녀"}, {"eng": "jacket", "kor": "재킷"}, {"eng": "movie", "kor": "영화"}, {"eng": "project", "kor": "계획"}, {"eng": "smile", "kor": "미소"}, {"eng": "tomato", "kor": "토마토"}, {"eng": "word", "kor": "단어"}, {"eng": "bee", "kor": "벌"}, {"eng": "church", "kor": "교회"}, {"eng": "drum", "kor": "북"}, {"eng": "give", "kor": "주다"}, {"eng": "jam", "kor": "잼"}, {"eng": "much", "kor": "많은"}, {"eng": "puppy", "kor": "강아지"}, {"eng": "snow", "kor": "눈"}, {"eng": "tomorrow", "kor": "내일"}, {"eng": "work", "kor": "일"}, {"eng": "beef", "kor": "쇠고기"}, {"eng": "circle", "kor": "원"}, {"eng": "dry", "kor": "마른"}, {"eng": "glad", "kor": "기쁜"}, {"eng": "job", "kor": "일"}, {"eng": "music", "kor": "음악"}, {"eng": "push", "kor": "누르다"}, {"eng": "so", "kor": "그래서"}, {"eng": "tonight", "kor": "오늘밤"}, {"eng": "world", "kor": "세상"}, {"eng": "before", "kor": "앞에"}, {"eng": "city", "kor": "도시"}, {"eng": "duck", "kor": "오리"}, {"eng": "glass", "kor": "유리"}, {"eng": "join", "kor": "함께하다"}, {"eng": "must", "kor": "~해야 한다"}, {"eng": "put", "kor": "놓다"}, {"eng": "soccer", "kor": "축구"}, {"eng": "too", "kor": "너무나"}, {"eng": "worry", "kor": "걱정하다"}, {"eng": "begin", "kor": "시작하다"}, {"eng": "class", "kor": "학급"}, {"eng": "during", "kor": "~동안"}, {"eng": "go", "kor": "가다"}, {"eng": "juice", "kor": "즙"}, {"eng": "name", "kor": "이름"}, {"eng": "queen", "kor": "여왕"}, {"eng": "sock", "kor": "양말"}, {"eng": "tooth", "kor": "이"}, {"eng": "write", "kor": "쓰다"}, {"eng": "behind", "kor": "~의 뒤에"}, {"eng": "clean", "kor": "깨끗한"}, {"eng": "ear", "kor": "귀"}, {"eng": "goal", "kor": "골"}, {"eng": "jump", "kor": "뛰어오르다"}, {"eng": "nation", "kor": "국가"}, {"eng": "question", "kor": "질문"}, {"eng": "soft", "kor": "부드러운"}, {"eng": "top", "kor": "꼭대기"}, {"eng": "wrong", "kor": "잘못된"}, {"eng": "believe", "kor": "믿다"}, {"eng": "clear", "kor": "확실한"}, {"eng": "early", "kor": "일찍"}, {"eng": "god", "kor": "신"}, {"eng": "just", "kor": "단지"}, {"eng": "nature", "kor": "자연"}, {"eng": "quick", "kor": "빠른"}, {"eng": "software", "kor": "소프트웨어(컴퓨터의 프로그램 체계)"}, {"eng": "touch", "kor": "만지다"}, {"eng": "year", "kor": "해"}, {"eng": "bell", "kor": "종"}, {"eng": "clever", "kor": "영리한"}, {"eng": "earth", "kor": "지구"}, {"eng": "gold", "kor": "금"}, {"eng": "keep", "kor": "계속하다"}, {"eng": "near", "kor": "가까운"}, {"eng": "quiet", "kor": "조용한"}, {"eng": "some", "kor": "조금의"}, {"eng": "town", "kor": "읍"}, {"eng": "yellow", "kor": "노란"}, {"eng": "below", "kor": "~보다 아래에/밑에"}, {"eng": "climb", "kor": "오르다"}, {"eng": "east", "kor": "동쪽"}, {"eng": "good", "kor": "좋은"}, {"eng": "key", "kor": "열쇠"}, {"eng": "neck", "kor": "목"}, {"eng": "quiz", "kor": "퀴즈"}, {"eng": "son", "kor": "아들"}, {"eng": "toy", "kor": "장난감"}, {"eng": "yes", "kor": "네"}, {"eng": "belt", "kor": "띠"}, {"eng": "clock", "kor": "(탁상·괘종시계 등의 휴대용이 아닌) 시계"}, {"eng": "eat", "kor": "먹다"}, {"eng": "goodbye", "kor": "안녕히 계세요/가세요"}, {"eng": "kick", "kor": "차다"}, {"eng": "need", "kor": "필요"}, {"eng": "rabbit", "kor": "토끼"}, {"eng": "song", "kor": "노래"}, {"eng": "track", "kor": "궤도"}, {"eng": "yesterday", "kor": "어제"}, {"eng": "beside", "kor": "~의 옆에/곁에"}, {"eng": "close", "kor": "가까운"}, {"eng": "egg", "kor": "알"}, {"eng": "grandfather", "kor": "할아버지"}, {"eng": "kid", "kor": "아이"}, {"eng": "never", "kor": "결코 ~하지 않다"}, {"eng": "race", "kor": "경주"}, {"eng": "sorry", "kor": "미안한"}, {"eng": "train", "kor": "기차"}, {"eng": "you", "kor": "너"}, {"eng": "between", "kor": "~의 사이에/중간에"}, {"eng": "clothes", "kor": "옷"}, {"eng": "eight", "kor": "8"}, {"eng": "grape", "kor": "포도"}, {"eng": "kill", "kor": "죽이다"}, {"eng": "new", "kor": "새로운"}, {"eng": "radio", "kor": "라디오"}, {"eng": "sound", "kor": "소리"}, {"eng": "travel", "kor": "여행하다"}, {"eng": "young", "kor": "어린"}, {"eng": "big", "kor": "큰"}, {"eng": "cloud", "kor": "구름"}, {"eng": "elephant", "kor": "코끼리"}, {"eng": "grass", "kor": "풀"}, {"eng": "kind", "kor": "친절한"}, {"eng": "news", "kor": "소식"}, {"eng": "rain", "kor": "비"}, {"eng": "soup", "kor": "수프"}, {"eng": "tree", "kor": "나무"}, {"eng": "zoo", "kor": "동물원"}];
+const SETS=[];for(let i=0;i<W.length;i+=20)SETS.push(W.slice(i,i+20));
+
+/* ══════════════════════ STORAGE ══════════════════════ */
+const ST={
+  get:(k,d=null)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}},
+  set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}}
+};
+const getProg=()=>ST.get('ebs_prog',{});
+const setProg=d=>ST.set('ebs_prog',d);
+const getDont=()=>ST.get('ebs_dont',[]);
+const setDont=d=>ST.set('ebs_dont',d);
+
+/* ══════════════════════ SPEECH ══════════════════════ */
+window.speechSynthesis.getVoices();
+window.speechSynthesis.onvoiceschanged=()=>{};
+function speak(t){
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);
+  u.lang='en-US';u.rate=0.82;u.pitch=1.05;
+  const vs=window.speechSynthesis.getVoices();
+  const v=vs.find(v=>v.lang==='en-US'&&/samantha|karen|victoria|zira/i.test(v.name))
+    ||vs.find(v=>v.lang==='en-US')||vs.find(v=>v.lang.startsWith('en'));
+  if(v)u.voice=v;
+  window.speechSynthesis.speak(u);
+}
+
+/* ══════════════════════ AUDIO ══════════════════════ */
+let _ac;
+const AC=()=>{if(!_ac)_ac=new(window.AudioContext||window.webkitAudioContext)();return _ac;};
+function bip(f,type,dur,vol=.18,dl=0){
+  try{const a=AC(),o=a.createOscillator(),g=a.createGain();
+    o.connect(g);g.connect(a.destination);
+    o.type=type;o.frequency.value=f;
+    g.gain.setValueAtTime(vol,a.currentTime+dl);
+    g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dl+dur);
+    o.start(a.currentTime+dl);o.stop(a.currentTime+dl+dur);}catch{}
+}
+const sfx={
+  ok:()=>{bip(523,'sine',.1,.2);bip(659,'sine',.1,.2,.1);bip(784,'sine',.18,.22,.2);},
+  no:()=>bip(180,'sawtooth',.28,.16),
+  combo:()=>[523,659,784,1047].forEach((f,i)=>bip(f,'sine',.14,.2,i*.08)),
+  clear:()=>[523,659,784,1047].forEach((f,i)=>bip(f,'sine',.16,.22,i*.09)),
+  tick:()=>bip(880,'square',.05,.04),
+  over:()=>[380,320,270,220].forEach((f,i)=>bip(f,'triangle',.28,.16,i*.12)),
+};
+
+/* ══════════════════════ UTILS ══════════════════════ */
+const shuf=a=>{const b=[...a];for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]];}return b;};
+function fxAt(el,txt,col){
+  const r=el.getBoundingClientRect();
+  const d=document.createElement('div');d.className='fx-msg';
+  d.style.cssText=`left:${r.left+r.width/2-24}px;top:${r.top+r.height*.3}px;color:${col};`;
+  d.textContent=txt;document.body.appendChild(d);setTimeout(()=>d.remove(),900);
+}
+function confetti(n=22){
+  const C=['#22c55e','#4f46e5','#f59e0b','#ef4444','#a855f7','#ec4899'];
+  for(let i=0;i<n;i++)setTimeout(()=>{
+    const p=document.createElement('div');p.className='fx-conf';
+    const s=6+Math.random()*8;
+    p.style.cssText=`left:${10+Math.random()*80}vw;top:0;width:${s}px;height:${s}px;background:${C[i%C.length]};border-radius:${Math.random()>.5?'50%':'3px'};animation-duration:${1.2+Math.random()*.8}s;`;
+    document.body.appendChild(p);setTimeout(()=>p.remove(),2200);
+  },i*32);
+}
+function showBanner(txt){
+  document.querySelectorAll('.banner').forEach(e=>e.remove());
+  const d=document.createElement('div');d.className='banner';d.textContent=txt;
+  document.body.appendChild(d);setTimeout(()=>d.remove(),2200);
+}
+
+/* ══════════════════════ NAVIGATION ══════════════════════ */
+let cur='home',sqTimerID=null;
+const screenMap={home:'homeScreen',fc:'fcScreen',mt:'mtScreen',sq:'sqScreen'};
+const navMap={home:'nHome',fc:'nFc',mt:'nMt',sq:'nSq'};
+
+function nav(to){
+  if(cur===to)return;
+  window.speechSynthesis.cancel();
+  if(sqTimerID){clearInterval(sqTimerID);sqTimerID=null;}
+  const prev=document.getElementById(screenMap[cur]);
+  const next=document.getElementById(screenMap[to]);
+  prev.classList.add('offL');
+  setTimeout(()=>prev.classList.add('off'),350);
+  next.classList.remove('off','offL');
+  cur=to;
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const nb=document.getElementById(navMap[to]);
+  if(nb)nb.classList.add('active');
+  if(to==='fc')fcInit();
+  if(to==='mt')mtSetupShow();
+  if(to==='sq')sqShowSetup();
+}
+function goHome(){
+  window.speechSynthesis.cancel();
+  if(sqTimerID){clearInterval(sqTimerID);sqTimerID=null;}
+  if(cur==='home')return;
+  const prev=document.getElementById(screenMap[cur]);
+  prev.classList.add('off');
+  document.getElementById('homeScreen').classList.remove('off','offL');
+  cur='home';
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('nHome').classList.add('active');
+  updateHome();
+}
+
+/* ══════════════════════ HOME ══════════════════════ */
+function updateHome(){
+  const prog=getProg(),dont=getDont();
+  let sets=0,words=0;
+  Object.values(prog).forEach(p=>{if(p.done){sets++;words+=p.know||0;}});
+  document.getElementById('hsSets').textContent=sets;
+  document.getElementById('hsWords').textContent=words;
+  document.getElementById('hsReview').textContent=dont.length;
+  document.getElementById('reviewBadge').style.display=dont.length?'block':'none';
+  const strip=document.getElementById('reviewStrip');
+  strip.innerHTML=dont.length
+    ?`<div class="review-strip" onclick="goReviewFromHome()"><div class="rs-icon">🔁</div><div class="rs-body"><div class="rs-title">복습할 단어 ${dont.length}개</div><div class="rs-sub">모르는 단어를 다시 학습해봐요!</div></div><span>›</span></div>`
+    :'';
+}
+function goReviewFromHome(){nav('fc');setTimeout(()=>fcTabMode('review',document.querySelector('.set-tab:nth-child(2)')),80);}
+updateHome();
+
+/* ══════════════════════ FLASHCARD ══════════════════════ */
+let fcWords=[],fcIdx=0,fcKL=[],fcDL=[],fcFlipped=false,fcBusy=false,fcSetI=-1,fcIsRev=false;
+
+function fcInit(){
+  document.getElementById('fcSets').style.display='block';
+  document.getElementById('fcStudy').style.display='none';
+  document.getElementById('fcResult').classList.remove('on');
+  fcRenderSets('all');
+}
+function fcTabMode(m,btn){
+  document.querySelectorAll('.set-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  fcRenderSets(m);
+}
+function fcRenderSets(m){
+  const prog=getProg(),dont=getDont(),g=document.getElementById('fcSetGrid');
+  g.innerHTML='';
+  if(m==='review'){
+    if(!dont.length){g.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="ei">🎉</div><div class="et">모르는 단어가 없어요!<br>전체 학습을 먼저 해봐요.</div></div>`;return;}
+    for(let i=0;i<dont.length;i+=20){
+      const chunk=dont.slice(i,i+20),n=Math.floor(i/20)+1;
+      const c=document.createElement('div');c.className='set-cell prog';
+      c.innerHTML=`<span class="sc-num">복${n}</span><span class="sc-range">${chunk.length}개</span><div class="sc-pct">🔁</div>`;
+      c.onclick=()=>fcStart(chunk,`복습 ${n}`,true);g.appendChild(c);
+    }
+    return;
+  }
+  SETS.forEach((set,i)=>{
+    const key=`set_${i}`,p=prog[key],done=p&&p.done,inprog=p&&!p.done;
+    const c=document.createElement('div');c.className='set-cell'+(done?' done':inprog?' prog':'');
+    const s=i*20+1,e=Math.min(s+19,W.length),pct=p?Math.round(p.know/20*100):0;
+    c.innerHTML=`<span class="sc-num">세트${i+1}</span><span class="sc-range">${s}~${e}</span><div class="sc-pct">${done?`✅${pct}%`:inprog?`▶${pct}%`:'🆕'}</div>`;
+    c.onclick=()=>fcStart(set,`세트 ${i+1}`,false,i);g.appendChild(c);
+  });
+}
+function fcStart(words,title,isRev=false,si=-1){
+  fcWords=[...words];fcSetI=si;fcIsRev=isRev;
+  fcIdx=0;fcKL=[];fcDL=[];fcFlipped=false;fcBusy=false;
+  document.getElementById('fcTopTitle').textContent=title;
+  document.getElementById('fcSets').style.display='none';
+  document.getElementById('fcStudy').style.display='flex';
+  document.getElementById('fcResult').classList.remove('on');
+  fcCard();speak(fcWords[0].eng);
+}
+function fcCard(){
+  const w=fcWords[fcIdx];fcFlipped=false;
+  document.getElementById('fc3d').classList.remove('flip');
+  const ew=document.getElementById('fcEng');
+  ew.textContent=w.eng;
+  ew.className='f-word'+(w.eng.length>12?' sm':w.eng.length>8?' md':'');
+  document.getElementById('fcBEng').textContent=w.eng;
+  const kw=document.getElementById('fcKor');
+  kw.textContent=w.kor;kw.className='f-kor'+(w.kor.length>7?' sm':'');
+  document.getElementById('fcTopRight').textContent=`${fcIdx+1}/${fcWords.length}`;
+  document.getElementById('fcK').textContent=fcKL.length;
+  document.getElementById('fcD').textContent=fcDL.length;
+  document.getElementById('fcProg').style.width=(fcIdx/fcWords.length*100)+'%';
+}
+function fcFlip(){
+  if(fcBusy)return;
+  fcFlipped=!fcFlipped;
+  document.getElementById('fc3d').classList.toggle('flip',fcFlipped);
+  if(fcFlipped)speak(fcWords[fcIdx].eng);
+}
+function fcMark(ok){
+  if(fcBusy)return;fcBusy=true;
+  const w=fcWords[fcIdx];
+  if(ok){fcKL.push(w);fxAt(document.getElementById('fc3d'),'✅ 알아요!','#22c55e');}
+  else{fcDL.push(w);fxAt(document.getElementById('fc3d'),'❌ 몰라요','#ef4444');}
+  const wrap=document.getElementById('fc3d');
+  wrap.style.cssText='transition:transform .26s ease,opacity .26s ease;transform:'+(ok?'translateX(-105%)':'translateX(105%)')+';opacity:0;';
+  setTimeout(()=>{
+    wrap.style.cssText='';fcIdx++;
+    if(fcIdx>=fcWords.length){fcBusy=false;fcFinish();return;}
+    fcCard();speak(fcWords[fcIdx].eng);
+    requestAnimationFrame(()=>setTimeout(()=>{fcBusy=false;},60));
+  },280);
+}
+function fcFinish(){
+  const prog=getProg();
+  if(!fcIsRev&&fcSetI>=0){prog[`set_${fcSetI}`]={know:fcKL.length,dont:fcDL.length,done:true,total:fcWords.length};setProg(prog);}
+  const ex=getDont();
+  if(fcIsRev){const ke=new Set(fcKL.map(w=>w.eng)),se=new Set(fcWords.map(w=>w.eng));setDont(ex.filter(w=>!ke.has(w.eng)||!se.has(w.eng)));}
+  else{const ee=new Set(ex.map(w=>w.eng)),ke=new Set(fcKL.map(w=>w.eng));setDont([...ex.filter(w=>!ke.has(w.eng)),...fcDL.filter(w=>!ee.has(w.eng))]);}
+  fcShowRes();
+}
+function fcShowRes(){
+  document.getElementById('fcStudy').style.display='none';
+  const tot=fcWords.length,k=fcKL.length,d=fcDL.length,pct=Math.round(k/tot*100);
+  let em,tt;
+  if(pct===100){em='🏆';tt='완벽해요!';}else if(pct>=80){em='🌟';tt='잘했어요!';}else if(pct>=50){em='👍';tt='좋아요!';}else{em='💪';tt='파이팅!';}
+  document.getElementById('fcREmoji').textContent=em;
+  document.getElementById('fcRTitle').textContent=tt;
+  document.getElementById('fcRPct').textContent=pct+'%';
+  document.getElementById('fcRK').textContent=k;
+  document.getElementById('fcRD').textContent=d;
+  document.getElementById('fcRT').textContent=tot;
+  const dl=document.getElementById('fcRList');
+  dl.innerHTML=!fcDL.length?'<div style="text-align:center;color:var(--grn);padding:8px;font-size:.85rem">🎉 모르는 단어 없음!</div>'
+    :'<div style="font-size:.7rem;color:var(--red);margin-bottom:6px;font-weight:700">❌ 복습할 단어 ('+fcDL.length+'개)</div>'+fcDL.map(w=>`<div class="dont-row"><b>${w.eng}</b><span style="color:var(--muted)">${w.kor}</span></div>`).join('');
+  document.getElementById('fcRRevBtn').style.display=fcDL.length?'block':'none';
+  document.getElementById('fcResult').classList.add('on');
+  if(pct>=80)confetti();
+}
+function fcDoReview(){fcStart(fcDL,'복습 세션',true);}
+function fcRestart(){fcIdx=0;fcKL=[];fcDL=[];fcFlipped=false;fcBusy=false;document.getElementById('fcResult').classList.remove('on');document.getElementById('fcStudy').style.display='flex';fcCard();speak(fcWords[0].eng);}
+function fcBackSets(){document.getElementById('fcResult').classList.remove('on');document.getElementById('fcStudy').style.display='none';document.getElementById('fcSets').style.display='block';fcRenderSets('all');updateHome();}
+
+// Swipe on card
+let fcTX=0;
+document.getElementById('fcScene').addEventListener('touchstart',e=>{fcTX=e.touches[0].clientX;},{passive:true});
+document.getElementById('fcScene').addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-fcTX;
+  if(Math.abs(dx)>50){if(!fcFlipped){fcFlip();return;}fcMark(dx<0);}
+},{passive:true});
+
+/* ══════════════════════ MATCHING ══════════════════════ */
+let mtPairs=4,mtScore=0,mtRounds=0,mtLives=3,mtTM=0,mtTMiss=0,mtStr=0,mtBStr=0,mtMCnt=0,mtBusy=false;
+let mtSEng=null,mtSKor=null,mtPool=[],mtRW=[];
+
+function mtSetupShow(){
+  document.getElementById('mtSetup').style.display='block';
+  document.getElementById('mtGame').style.display='none';
+  document.getElementById('mtResult').classList.remove('on');
+}
+function mtDiff(n,btn){mtPairs=n;document.querySelectorAll('.diff-opt').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+function mtStart(){
+  mtScore=0;mtRounds=0;mtLives=3;mtTM=0;mtTMiss=0;mtStr=0;mtBStr=0;
+  mtPool=shuf([...W]);
+  document.getElementById('mtSetup').style.display='none';
+  document.getElementById('mtGame').style.display='flex';
+  document.getElementById('mtResult').classList.remove('on');
+  mtHUD();mtRound();
+}
+function mtRound(){
+  mtRounds++;mtMCnt=0;mtSEng=null;mtSKor=null;mtBusy=false;
+  document.getElementById('mtNext').classList.remove('on');
+  if(mtPool.length<mtPairs)mtPool=shuf([...W]);
+  mtRW=mtPool.splice(0,mtPairs);mtHUD();
+  const ec=document.getElementById('mtEng'),kc=document.getElementById('mtKor');
+  ec.innerHTML='';kc.innerHTML='';
+  shuf(mtRW).forEach((w,i)=>{
+    const c=document.createElement('div');c.className='m-card eng';c.dataset.id=w.eng;
+    c.innerHTML=`${w.eng}<span class="m-spk">🔊</span>`;
+    c.style.cssText='opacity:0;transform:translateX(-14px);';
+    c.onclick=()=>mtClickE(w,c);ec.appendChild(c);
+    setTimeout(()=>{c.style.cssText='transition:all .22s;opacity:1;transform:none;';},i*50+30);
+  });
+  shuf(mtRW).forEach((w,i)=>{
+    const c=document.createElement('div');c.className='m-card kor';c.dataset.id=w.eng;
+    c.textContent=w.kor;c.style.cssText='opacity:0;transform:translateX(14px);';
+    c.onclick=()=>mtClickK(w,c);kc.appendChild(c);
+    setTimeout(()=>{c.style.cssText='transition:all .22s;opacity:1;transform:none;';},i*50+30);
+  });
+  document.getElementById('mtProg').style.width='0%';
+}
+function mtClickE(w,c){
+  if(mtBusy||c.classList.contains('matched'))return;
+  speak(w.eng);
+  if(mtSEng&&mtSEng.c===c){c.classList.remove('sel');mtSEng=null;return;}
+  if(mtSEng)mtSEng.c.classList.remove('sel');
+  c.classList.add('sel');mtSEng={w,c};if(mtSKor)mtCheck();
+}
+function mtClickK(w,c){
+  if(mtBusy||c.classList.contains('matched'))return;
+  if(mtSKor&&mtSKor.c===c){c.classList.remove('sel');mtSKor=null;return;}
+  if(mtSKor)mtSKor.c.classList.remove('sel');
+  c.classList.add('sel');mtSKor={w,c};if(mtSEng)mtCheck();
+}
+function mtCheck(){
+  mtBusy=true;
+  const {w:ew,c:ec}=mtSEng,{w:kw,c:kc}=mtSKor;
+  if(ew.eng===kw.eng){
+    mtStr++;if(mtStr>mtBStr)mtBStr=mtStr;
+    const pts=10+Math.min(mtStr-1,9)*3;mtScore+=pts;mtTM++;mtMCnt++;
+    ec.classList.remove('sel');kc.classList.remove('sel');
+    ec.classList.add('matched');kc.classList.add('matched');
+    fxAt(ec,`+${pts}`,'#22c55e');sfx.ok();
+    if(mtStr>=3){sfx.combo();confetti();}
+    if(mtStr===3)showBanner('🔥 3연속! 잘했어요!');
+    if(mtStr===5)showBanner('💥 5연속!! 대단해요!');
+    mtSEng=null;mtSKor=null;
+    document.getElementById('mtProg').style.width=(mtMCnt/mtPairs*100)+'%';
+    mtHUD();
+    setTimeout(()=>{mtBusy=false;if(mtMCnt===mtPairs)mtRoundDone();},420);
+  }else{
+    mtStr=0;mtTMiss++;mtLives=Math.max(0,mtLives-1);
+    ec.classList.remove('sel');kc.classList.remove('sel');
+    ec.classList.add('wrong-f');kc.classList.add('wrong-f');
+    fxAt(ec,'❌','#ef4444');sfx.no();mtHUD();
+    setTimeout(()=>{ec.classList.remove('wrong-f');kc.classList.remove('wrong-f');mtSEng=null;mtSKor=null;mtBusy=false;if(mtLives<=0)mtEnd();},480);
+  }
+}
+function mtRoundDone(){
+  const b=20+mtRounds*5;mtScore+=b;showBanner(`🎉 라운드 ${mtRounds} 완료! +${b}`);sfx.clear();confetti();mtHUD();
+  setTimeout(()=>document.getElementById('mtNext').classList.add('on'),600);
+}
+function mtHUD(){
+  document.getElementById('mtScore').textContent=mtScore;
+  document.getElementById('mtRound').textContent=mtRounds;
+  document.getElementById('mtLives').textContent='❤️'.repeat(mtLives)||'💔';
+}
+function mtEnd(){
+  document.getElementById('mtGame').style.display='none';
+  const acc=mtTM+mtTMiss>0?Math.round(mtTM/(mtTM+mtTMiss)*100):0;
+  let em,tt;if(acc>=90){em='🏆';tt='완벽해요!';}else if(acc>=70){em='🌟';tt='잘했어요!';}else{em='💪';tt='다시 도전!';}
+  document.getElementById('mtREmoji').textContent=em;document.getElementById('mtRTitle').textContent=tt;
+  document.getElementById('mtRScore').textContent=mtScore+'점';
+  document.getElementById('mtRRound').textContent=mtRounds;document.getElementById('mtRMatched').textContent=mtTM;
+  document.getElementById('mtRMiss').textContent=mtTMiss;document.getElementById('mtRCombo').textContent=mtBStr;
+  document.getElementById('mtResult').classList.add('on');confetti();
+}
+
+/* ══════════════════════ SPEED QUIZ ══════════════════════ */
+let sqM='k2e',sqSec=60,sqLeft=0,sqScore=0,sqCombo=0,sqMaxC=0,sqOK=0,sqBad=0,sqQN=0,sqAns=false,sqBadW=[],sqPool2=[];
+
+function sqShowSetup(){
+  document.getElementById('sqSetup').style.display='flex';
+  document.getElementById('sqSetup').style.flexDirection='column';
+  document.getElementById('sqGame').style.display='none';
+  document.getElementById('sqResult').classList.remove('on');
+}
+function sqModeSet(m,btn){sqM=m;document.querySelectorAll('.sq-opt-row:first-of-type .sq-opt').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+function sqTimeSet(t,btn){sqSec=t;document.querySelectorAll('.sq-opt-row:last-of-type .sq-opt').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+function sqStart(){
+  sqScore=0;sqCombo=0;sqMaxC=0;sqOK=0;sqBad=0;sqQN=0;sqAns=false;sqBadW=[];sqLeft=sqSec;
+  sqPool2=shuf([...W]);
+  document.getElementById('sqSetup').style.display='none';
+  document.getElementById('sqGame').style.display='flex';
+  document.getElementById('sqGame').style.flexDirection='column';
+  document.getElementById('sqResult').classList.remove('on');
+  document.getElementById('sqTimer').textContent=sqLeft;
+  document.getElementById('sqTimerFill').style.width='100%';
+  document.getElementById('sqTimerBox').classList.remove('danger');
+  sqHUD();sqQ();
+  sqTimerID=setInterval(()=>{
+    sqLeft--;
+    document.getElementById('sqTimer').textContent=sqLeft;
+    document.getElementById('sqTimerFill').style.width=(sqLeft/sqSec*100)+'%';
+    if(sqLeft<=10){document.getElementById('sqTimerBox').classList.add('danger');sfx.tick();}
+    if(sqLeft<=0){clearInterval(sqTimerID);sqTimerID=null;sqEnd();}
+  },1000);
+}
+function sqHUD(){
+  document.getElementById('sqScore').textContent=sqScore;
+  document.getElementById('sqComboDisp').textContent=sqCombo;
+}
+function sqQ(){
+  sqAns=false;
+  if(sqPool2.length<4)sqPool2=shuf([...W]);
+  const cor=sqPool2.pop();
+  const opts=shuf([cor,...shuf(W.filter(w=>w.eng!==cor.eng)).slice(0,3)]);
+  sqQN++;
+  document.getElementById('sqQLabel').textContent=sqM==='k2e'?'🇰🇷 뜻 → 🇺🇸 영단어':'🇺🇸 영단어 → 🇰🇷 뜻';
+  document.getElementById('sqQNum').textContent=`문제 ${sqQN}`;
+  const stem=sqM==='k2e'?cor.kor:cor.eng;
+  const el=document.getElementById('sqStem');el.textContent=stem;
+  el.className='q-stem'+(stem.length>8?' sm':'');
+  if(sqM==='e2k')speak(cor.eng);
+  const g=document.getElementById('sqGrid');g.innerHTML='';
+  opts.forEach(opt=>{
+    const b=document.createElement('button');b.className='q-btn';
+    b.textContent=sqM==='k2e'?opt.eng:opt.kor;
+    b.onclick=()=>sqAns2(opt,cor,b);g.appendChild(b);
+  });
+}
+function sqAns2(opt,cor,btn){
+  if(sqAns)return;sqAns=true;
+  const ok=opt.eng===cor.eng;
+  document.querySelectorAll('.q-btn').forEach(b=>{
+    b.disabled=true;
+    if(sqM==='k2e'?b.textContent===cor.eng:b.textContent===cor.kor)b.classList.add('correct');
+  });
+  if(ok){
+    sqOK++;sqCombo++;if(sqCombo>sqMaxC)sqMaxC=sqCombo;
+    const pts=10+Math.min(sqCombo-1,9)*2;sqScore+=pts;sfx.ok();
+    fxAt(btn,`+${pts}`,'#22c55e');
+    const ct=document.getElementById('sqCTag');
+    if(sqCombo>=3){ct.textContent=`🔥 ${sqCombo}연속!`;ct.classList.add('on');sfx.combo();}
+    if(sqCombo===3)showBanner('🔥 3연속!');if(sqCombo===5){showBanner('💥 5연속!!');confetti();}
+    setTimeout(sqQ,560);
+  }else{
+    sqBad++;sqCombo=0;btn.classList.add('wrong');sfx.no();
+    sqBadW.push(cor);document.getElementById('sqCTag').classList.remove('on');
+    fxAt(btn,'❌','#ef4444');setTimeout(sqQ,840);
+  }
+  sqHUD();
+}
+function sqEnd(){
+  sfx.over();confetti();
+  document.getElementById('sqGame').style.display='none';
+  const tot=sqOK+sqBad,acc=tot>0?Math.round(sqOK/tot*100):0;
+  let em,tt;if(acc>=90){em='🏆';tt='완벽해요!';}else if(acc>=70){em='🌟';tt='잘했어요!';}else{em='💪';tt='다시 도전!';}
+  document.getElementById('sqREmoji').textContent=em;document.getElementById('sqRTitle').textContent=tt;
+  document.getElementById('sqRScore').textContent=sqScore+'점';
+  document.getElementById('sqRStars').textContent=acc>=90?'⭐⭐⭐':acc>=70?'⭐⭐':'⭐';
+  document.getElementById('sqRC').textContent=sqOK;document.getElementById('sqRW').textContent=sqBad;
+  document.getElementById('sqRCombo').textContent=sqMaxC;document.getElementById('sqRAcc').textContent=acc+'%';
+  const uniq=[...new Map(sqBadW.map(w=>[w.eng,w])).values()];
+  const dl=document.getElementById('sqRList');
+  dl.innerHTML=!uniq.length?'<div style="text-align:center;color:var(--grn);padding:8px;font-size:.85rem">🎉 오답 없음!</div>'
+    :'<div style="font-size:.7rem;color:var(--red);margin-bottom:6px;font-weight:700">❌ 틀린 단어 ('+uniq.length+'개)</div>'+uniq.map(w=>`<div class="dont-row"><b>${w.eng}</b><span style="color:var(--muted)">${w.kor}</span></div>`).join('');
+  document.getElementById('sqResult').classList.add('on');
+}
+function sqReset(){sqShowSetup();}
+
+/* ══════════════════════ INSTALL PROMPT ══════════════════════ */
+let installEvt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();installEvt=e;
+  document.getElementById('installBar').classList.add('show');
+});
+function doInstall(){
+  if(!installEvt)return;
+  installEvt.prompt();
+  installEvt.userChoice.then(()=>{installEvt=null;document.getElementById('installBar').classList.remove('show');});
+}
+
+/* ══════════════════════ SERVICE WORKER ══════════════════════ */
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body>
+</html>
