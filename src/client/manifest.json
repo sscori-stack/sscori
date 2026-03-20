@@ -1,0 +1,17 @@
+{
+  "name": "EBS 영단어 학습",
+  "short_name": "영단어앱",
+  "description": "EBS 초등 필수 영단어 800 - 플래시카드, 매칭게임, 스피드퀴즈",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a1a2e",
+  "theme_color": "#4f46e5",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["education", "kids"],
+  "screenshots": []
+}

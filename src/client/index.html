@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EBS 영단어">
+<meta name="theme-color" content="#4f46e5">
+<link rel="manifest" href="manifest.json">
+<title>EBS 영단어 앱</title>
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="app">
+
+<!-- Install Bar -->
+<div class="install-bar" id="installBar">
+  <span style="flex:1;font-size:.85rem;">📱 홈 화면에 앱으로 추가하기</span>
+  <button id="installBtn">설치</button>
+  <button class="dismiss" id="installDismiss">✕</button>
+</div>
+
+<!-- Home Screen -->
+<div id="homeScreen" class="screen">
+  <div class="home-hero">
+    <span class="app-mascot">🦊</span>
+    <div class="app-name">EBS 영단어</div>
+    <div class="app-sub">초등 필수 800단어 · 발음 · 게임 🎮</div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><span class="sv" id="hsSets">0</span><span class="sl">완료 세트</span></div>
+    <div class="stat-card"><span class="sv" id="hsWords">0</span><span class="sl">학습 단어</span></div>
+    <div class="stat-card"><span class="sv" id="hsReview">0</span><span class="sl">복습 단어</span></div>
+  </div>
+  <div id="reviewStrip"></div>
+  <div class="section-hd">📚 학습 모드</div>
+  <div class="menu-grid">
+    <div class="menu-cell c-ind" data-nav="fc">
+      <span class="mc-icon">📖</span>
+      <div class="mc-title">플래시카드</div>
+      <div class="mc-desc">20개씩 단계별 학습</div>
+    </div>
+    <div class="menu-cell c-pnk" data-nav="mt">
+      <span class="mc-icon">🎴</span>
+      <div class="mc-title">단어 매칭</div>
+      <div class="mc-desc">짝 맞추기 게임</div>
+    </div>
+    <div class="menu-cell c-amb" data-nav="sq">
+      <span class="mc-icon">⚡</span>
+      <div class="mc-title">스피드 퀴즈</div>
+      <div class="mc-desc">시간 내에 최다 정답!</div>
+    </div>
+    <div class="menu-cell c-grn" id="reviewMenuCell">
+      <span class="mc-icon">🔁</span>
+      <div class="mc-title">오답 복습</div>
+      <div class="mc-desc">모르는 단어만</div>
+      <div class="mc-badge" id="reviewBadge" style="display:none">!</div>
+    </div>
+  </div>
+</div>
+
+<!-- Flashcard Screen -->
+<div id="fcScreen" class="screen off">
+  <div class="topbar">
+    <button class="tb-back" id="fcBack" aria-label="홈으로 돌아가기">← 홈</button>
+    <div class="tb-title" id="fcTopTitle">📖 플래시카드</div>
+    <div class="tb-right" id="fcTopRight"></div>
+  </div>
+  <div id="fcSets">
+    <div class="set-tabs">
+      <button class="set-tab active" data-fc-tab="all" aria-label="전체 세트 보기">📚 전체</button>
+      <button class="set-tab" data-fc-tab="review" aria-label="복습 세트 보기">🔁 복습</button>
+    </div>
+    <div class="set-grid" id="fcSetGrid"></div>
+  </div>
+  <div id="fcStudy" class="fc-study" style="display:none;flex-direction:column;">
+    <div class="fc-hud">
+      <div class="pill g">✅ <span id="fcK">0</span></div>
+      <div class="prog-wrap"><div class="prog-fill" id="fcProg" style="width:0%"></div></div>
+      <div class="pill r">❌ <span id="fcD">0</span></div>
+    </div>
+    <div class="scene" id="fcScene">
+      <div class="card-3d" id="fc3d">
+        <div class="face front" id="fcFront">
+          <div class="f-word" id="fcEng"></div>
+          <button class="speak-btn" id="fcSpeakBtn" aria-label="발음 듣기">🔊 발음 듣기</button>
+          <div class="f-hint">탭하면 뜻이 나와요</div>
+        </div>
+        <div class="face back" id="fcBackFace">
+          <div class="f-back-eng" id="fcBEng"></div>
+          <div class="f-kor" id="fcKor"></div>
+          <div class="f-hint">탭하면 앞으로 돌아가요</div>
+        </div>
+      </div>
+    </div>
+    <div class="swipe-hint">⬅️ 알아요 &nbsp;|&nbsp; 모르면 ➡️</div>
+    <div class="act-row">
+      <button class="act-btn act-k" id="fcMarkKnow" aria-label="알아요">✅ 알아요!</button>
+      <button class="act-btn act-d" id="fcMarkDont" aria-label="몰라요">❌ 몰라요</button>
+    </div>
+  </div>
+  <div class="fc-res" id="fcResult">
+    <div class="res-box">
+      <div class="res-emo" id="fcREmoji">🎉</div>
+      <div class="res-ttl" id="fcRTitle">완료!</div>
+      <div class="res-pct" id="fcRPct">0%</div>
+      <div class="res-stats">
+        <div class="res-stat g"><span class="rv" id="fcRK">0</span><span class="rl">✅ 알아요</span></div>
+        <div class="res-stat r"><span class="rv" id="fcRD">0</span><span class="rl">❌ 몰라요</span></div>
+        <div class="res-stat"><span class="rv" id="fcRT">0</span><span class="rl">총 단어</span></div>
+      </div>
+      <div class="dont-scroll" id="fcRList"></div>
+    </div>
+    <div class="res-btns">
+      <button class="res-btn rb-rev" id="fcRRevBtn">🔁 모르는 단어 복습</button>
+      <button class="res-btn rb-again" id="fcRestartBtn">↩️ 다시 학습</button>
+      <button class="res-btn rb-back" id="fcBackSetsBtn">← 세트 목록</button>
+    </div>
+  </div>
+</div>
+
+<!-- Matching Screen -->
+<div id="mtScreen" class="screen off">
+  <div class="topbar">
+    <button class="tb-back" id="mtBack" aria-label="홈으로 돌아가기">← 홈</button>
+    <div class="tb-title">🎴 단어 매칭</div>
+    <div class="tb-right" id="mtTopRight"></div>
+  </div>
+  <div id="mtSetup">
+    <div class="mt-setup-inner">
+      <div>
+        <div class="sq-label">난이도 (한 라운드 쌍 수)</div>
+        <div class="mt-diff-row">
+          <button class="diff-opt active" data-mt-diff="4" aria-label="4쌍">🌱 4쌍</button>
+          <button class="diff-opt" data-mt-diff="6" aria-label="6쌍">🌿 6쌍</button>
+          <button class="diff-opt" data-mt-diff="8" aria-label="8쌍">🌳 8쌍</button>
+        </div>
+      </div>
+      <button class="mt-start" id="mtStartBtn" aria-label="게임 시작">🚀 게임 시작!</button>
+    </div>
+  </div>
+  <div id="mtGame" style="display:none;flex-direction:column;flex:1;">
+    <div class="mt-hud">
+      <div class="pill">점수 <span class="pv" id="mtScore">0</span></div>
+      <div class="pill">R<span class="pv" id="mtRound">1</span></div>
+      <div class="pill">❤️<span class="pv" id="mtLives">3</span></div>
+      <div class="pbar"><div class="pbar-fill" id="mtProg" style="width:0%"></div></div>
+    </div>
+    <div class="mt-cols">
+      <div><div class="col-hd">🇺🇸 영어</div><div class="m-col" id="mtEng"></div></div>
+      <div><div class="col-hd">🇰🇷 한국어</div><div class="m-col" id="mtKor"></div></div>
+    </div>
+    <button class="next-rnd" id="mtNext" aria-label="다음 라운드">다음 라운드 ➡️</button>
+  </div>
+  <div class="mt-res" id="mtResult">
+    <div class="mt-res-box">
+      <div class="res-emo" id="mtREmoji">🏆</div>
+      <div class="res-ttl" id="mtRTitle">완료!</div>
+      <div class="mt-score" id="mtRScore">0점</div>
+      <div class="mt-rstats">
+        <div class="mt-rstat"><span class="rv" id="mtRRound">0</span><span class="rl">라운드</span></div>
+        <div class="mt-rstat"><span class="rv" id="mtRMatched">0</span><span class="rl">✅ 매칭</span></div>
+        <div class="mt-rstat"><span class="rv" id="mtRMiss">0</span><span class="rl">❌ 오답</span></div>
+        <div class="mt-rstat"><span class="rv" id="mtRCombo">0</span><span class="rl">🔥 최고</span></div>
+      </div>
+    </div>
+    <div class="mt-rbtns">
+      <button class="mt-rbtn again" id="mtResetBtn" aria-label="다시 하기">🔄 다시</button>
+      <button class="mt-rbtn back" id="mtHomeBtn" aria-label="홈으로">🏠 홈</button>
+    </div>
+  </div>
+</div>
+
+<!-- Speed Quiz Screen -->
+<div id="sqScreen" class="screen off">
+  <div class="topbar">
+    <button class="tb-back" id="sqBack" aria-label="홈으로 돌아가기">← 홈</button>
+    <div class="tb-title">⚡ 스피드 퀴즈</div>
+    <div class="tb-right" id="sqTopRight"></div>
+  </div>
+  <div id="sqSetup">
+    <div class="sq-setup-inner">
+      <div>
+        <div class="sq-label">📝 퀴즈 방향</div>
+        <div class="sq-opt-row" id="sqModeRow">
+          <button class="sq-opt active" data-sq-mode="k2e" aria-label="뜻에서 영단어">🇰🇷→🇺🇸 뜻→영단어</button>
+          <button class="sq-opt" data-sq-mode="e2k" aria-label="영단어에서 뜻">🇺🇸→🇰🇷 영단어→뜻</button>
+        </div>
+      </div>
+      <div>
+        <div class="sq-label">⏱️ 제한 시간</div>
+        <div class="sq-opt-row" id="sqTimeRow">
+          <button class="sq-opt" data-sq-time="30">30초</button>
+          <button class="sq-opt active" data-sq-time="60">60초</button>
+          <button class="sq-opt" data-sq-time="90">90초</button>
+          <button class="sq-opt" data-sq-time="120">2분</button>
+        </div>
+      </div>
+      <button class="sq-go" id="sqStartBtn" aria-label="시작">🚀 시작!</button>
+    </div>
+  </div>
+  <div id="sqGame" style="display:none;flex-direction:column;">
+    <div class="sq-hud">
+      <div class="pill">점수 <span class="pv" id="sqScore">0</span></div>
+      <div class="pill">🔥<span class="pv" id="sqComboDisp">0</span></div>
+      <div class="timer-box" id="sqTimerBox">
+        <div class="tv" id="sqTimer">60</div>
+        <div class="t-bar"><div class="t-fill" id="sqTimerFill" style="width:100%"></div></div>
+      </div>
+    </div>
+    <div class="combo-tag" id="sqCTag"></div>
+    <div class="sq-q-box">
+      <div class="q-meta">
+        <span id="sqQLabel">방향</span>
+        <span id="sqQNum">문제 1</span>
+      </div>
+      <div class="q-stem" id="sqStem"></div>
+      <div class="q-grid" id="sqGrid"></div>
+    </div>
+  </div>
+  <div class="sq-res" id="sqResult">
+    <div class="sqr-box">
+      <div class="res-emo" id="sqREmoji">🏆</div>
+      <div class="res-ttl" id="sqRTitle">완료!</div>
+      <div class="sqr-score" id="sqRScore">0점</div>
+      <div class="sqr-stars" id="sqRStars">⭐⭐⭐</div>
+      <div class="sq-rstats">
+        <div class="sq-rstat"><span class="rv" id="sqRC">0</span><span class="rl">✅ 정답</span></div>
+        <div class="sq-rstat"><span class="rv" id="sqRW">0</span><span class="rl">❌ 오답</span></div>
+        <div class="sq-rstat"><span class="rv" id="sqRCombo">0</span><span class="rl">🔥 최고콤보</span></div>
+        <div class="sq-rstat"><span class="rv" id="sqRAcc">0%</span><span class="rl">🎯 정확도</span></div>
+      </div>
+      <div class="dont-scroll" id="sqRList"></div>
+    </div>
+    <div class="sq-rbtns">
+      <button class="sq-rbtn again" id="sqResetBtn" aria-label="다시 하기">🔄 다시</button>
+      <button class="sq-rbtn back" id="sqHomeBtn" aria-label="홈으로">🏠 홈</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Navigation -->
+<nav class="bottom-nav" aria-label="메인 네비게이션">
+  <button class="nav-btn active" id="nHome" data-nav="home" aria-label="홈"><div class="nav-icon">🏠</div><div class="nav-label">홈</div></button>
+  <button class="nav-btn" id="nFc" data-nav="fc" aria-label="플래시카드"><div class="nav-icon">📖</div><div class="nav-label">플래시카드</div></button>
+  <button class="nav-btn" id="nMt" data-nav="mt" aria-label="매칭"><div class="nav-icon">🎴</div><div class="nav-label">매칭</div></button>
+  <button class="nav-btn" id="nSq" data-nav="sq" aria-label="스피드퀴즈"><div class="nav-icon">⚡</div><div class="nav-label">스피드퀴즈</div></button>
+</nav>
+
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
