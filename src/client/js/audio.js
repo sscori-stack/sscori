@@ -36,6 +36,8 @@ export function speak(t) {
   window.speechSynthesis.speak(u);
 }
 
-// Pre-load voices
-window.speechSynthesis.getVoices();
-window.speechSynthesis.onvoiceschanged = () => {};
+// FIX: Guard against missing speechSynthesis API before accessing
+if (window.speechSynthesis) {
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.onvoiceschanged = () => {};
+}

@@ -1,6 +1,6 @@
 import { W } from '../data/words.js';
-import { speak } from '../audio.js';
-import { sfx } from '../audio.js';
+// FIX: Combined duplicate imports from audio.js
+import { speak, sfx } from '../audio.js';
 import { shuffle, fxAt, confetti, showBanner } from '../utils.js';
 import { goHome } from '../router.js';
 

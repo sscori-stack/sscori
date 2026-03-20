@@ -1,4 +1,5 @@
-import { nav, goHome, onNavigate } from '../js/router.js';
+// FIX: Corrected redundant import path (was '../js/router.js')
+import { nav, goHome, onNavigate } from './router.js';
 import { initHome, updateHome, setGoReviewCallback } from './screens/home.js';
 import { initFlashcard, fcInit, activateReviewTab } from './screens/flashcard.js';
 import { initMatching, mtSetupShow } from './screens/matching.js';

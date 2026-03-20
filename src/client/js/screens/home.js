@@ -32,7 +32,8 @@ function goReviewFromHome() {
 }
 
 export function initHome() {
-  document.querySelectorAll('[data-nav]').forEach(el => {
+  // FIX: Scope to .menu-grid to avoid double-binding bottom nav buttons
+  document.querySelectorAll('.menu-grid [data-nav]').forEach(el => {
     const target = el.dataset.nav;
     if (target) {
       el.addEventListener('click', () => nav(target));
