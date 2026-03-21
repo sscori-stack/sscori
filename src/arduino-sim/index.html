@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>아두이노 LED 시뮬레이터</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <header id="header">
+    <div class="header-left">
+      <span class="logo-icon">⚡</span>
+      <h1 class="logo-text">아두이노 LED 시뮬레이터</h1>
+    </div>
+    <div class="header-status">
+      <span class="status-dot idle" id="statusDot"></span>
+      <span id="statusText">준비</span>
+    </div>
+  </header>
+
+  <!-- Activity Navigation -->
+  <nav id="activityNav" aria-label="활동 선택"></nav>
+
+  <main id="main">
+
+    <!-- Left: Simulation Panel -->
+    <section id="simPanel">
+
+      <!-- Activity Info -->
+      <div id="activityInfo">
+        <h2 id="actTitle"></h2>
+        <p id="actDesc"></p>
+        <div id="concepts"></div>
+      </div>
+
+      <!-- Instructions -->
+      <div id="instructionsBox">
+        <div class="section-label">📋 순서</div>
+        <ol id="instructionList"></ol>
+      </div>
+
+      <!-- Arduino Board -->
+      <div id="boardArea">
+        <div class="section-label">🔌 아두이노 보드</div>
+        <div id="arduino">
+          <div class="board-body">
+            <div class="usb-port">USB</div>
+            <div class="board-header">
+              <span class="board-name">Arduino Uno</span>
+              <div class="board-indicators">
+                <span class="ind-led power-led" title="전원">PWR</span>
+                <span class="ind-led pin13-led" id="boardPin13Led" title="핀13 LED">L</span>
+              </div>
+            </div>
+            <div class="pin-row" id="digitalPinsRow">
+              <div class="pin-group-label">DIGITAL (PWM~)</div>
+              <div class="pins">
+                <div class="pin pwm" data-pin="0"><span>0</span></div>
+                <div class="pin" data-pin="1"><span>1</span></div>
+                <div class="pin" data-pin="2"><span>2</span></div>
+                <div class="pin pwm" data-pin="3"><span>~3</span></div>
+                <div class="pin" data-pin="4"><span>4</span></div>
+                <div class="pin pwm" data-pin="5"><span>~5</span></div>
+                <div class="pin pwm" data-pin="6"><span>~6</span></div>
+                <div class="pin" data-pin="7"><span>7</span></div>
+                <div class="pin" data-pin="8"><span>8</span></div>
+                <div class="pin pwm" data-pin="9"><span>~9</span></div>
+                <div class="pin pwm" data-pin="10"><span>~10</span></div>
+                <div class="pin pwm" data-pin="11"><span>~11</span></div>
+                <div class="pin" data-pin="12"><span>12</span></div>
+                <div class="pin" data-pin="13"><span>13</span></div>
+              </div>
+            </div>
+            <div class="pin-row" id="analogPinsRow">
+              <div class="pin-group-label">POWER &amp; ANALOG</div>
+              <div class="pins">
+                <div class="pin gnd"><span>GND</span></div>
+                <div class="pin power"><span>5V</span></div>
+                <div class="pin power"><span>3.3V</span></div>
+                <div class="pin analog" data-pin="14"><span>A0</span></div>
+                <div class="pin analog" data-pin="15"><span>A1</span></div>
+                <div class="pin analog" data-pin="16"><span>A2</span></div>
+                <div class="pin analog" data-pin="17"><span>A3</span></div>
+                <div class="pin analog" data-pin="18"><span>A4</span></div>
+                <div class="pin analog" data-pin="19"><span>A5</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Components (LEDs) -->
+      <div id="circuitArea">
+        <div class="section-label">💡 회로 (브레드보드)</div>
+        <div id="componentArea"></div>
+        <div id="connectionInfo"></div>
+      </div>
+
+    </section>
+
+    <!-- Right: Code Panel -->
+    <section id="codePanel">
+
+      <div id="toolbar">
+        <button class="tool-btn run" id="runBtn" aria-label="실행">
+          <span class="btn-icon">▶</span> 실행
+        </button>
+        <button class="tool-btn stop" id="stopBtn" disabled aria-label="정지">
+          <span class="btn-icon">⏹</span> 정지
+        </button>
+        <button class="tool-btn reset" id="resetBtn" aria-label="초기화">
+          <span class="btn-icon">↺</span> 초기화
+        </button>
+        <div class="toolbar-sep"></div>
+        <div class="speed-ctrl">
+          <label for="speedSelect">속도</label>
+          <select id="speedSelect">
+            <option value="0.25">0.25x</option>
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1x</option>
+            <option value="2">2x</option>
+            <option value="5">5x</option>
+            <option value="10">10x</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="editorWrap">
+        <div id="lineNumbers"></div>
+        <textarea id="editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+      </div>
+
+      <div id="helpBtns">
+        <button class="help-btn" id="hintBtn">💡 힌트</button>
+        <button class="help-btn" id="solutionBtn">✅ 정답 보기</button>
+      </div>
+      <div id="hintContent" class="collapsible" style="display:none"></div>
+      <div id="solutionPanel" class="collapsible" style="display:none">
+        <pre id="solutionCode"></pre>
+        <button class="load-btn" id="loadSolution">이 코드 불러오기</button>
+      </div>
+
+      <div id="serialPanel">
+        <div id="serialHeader">
+          <span>📟 시리얼 모니터</span>
+          <button id="clearSerial" class="small-btn">지우기</button>
+        </div>
+        <div id="serialOutput"></div>
+      </div>
+
+    </section>
+
+  </main>
+
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
