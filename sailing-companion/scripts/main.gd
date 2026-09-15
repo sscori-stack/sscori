@@ -8,8 +8,10 @@ const SCREEN_MARGIN := 16
 const FPS_ACTIVE := 30
 const FPS_IDLE := 15
 const AUTOPILOT_IDLE_SECONDS := 20.0
-## 시뮬레이션 타각(-1~1)을 휠 회전각(도)으로 바꾸는 배율.
-const WHEEL_DEG_PER_RUDDER := 60.0
+## 시뮬레이션 타각(-1~1)을 휠 회전각(도)으로 바꾸는 배율(휠 최대각과 같게).
+const WHEEL_DEG_PER_RUDDER := 90.0
+## 플레이어가 손을 뗀 뒤 선장이 그 역할을 되찾기까지의 시간(초).
+const PLAYER_HANDOVER_SECONDS := 10.0
 
 ## 다른 노드가 참조할 수 있는 단일 인스턴스 (씬은 하나뿐이다).
 static var instance: SailingMain
@@ -30,6 +32,8 @@ var _debug_timer: float = 0.0
 
 var _boat: Boat
 var _wheels: Array = []
+var _player_helm_until: float = -1.0
+var _player_sail_until: float = -1.0
 var _wheel_heading: float = 0.0
 var _wheel_dragging: bool = false
 
@@ -126,14 +130,22 @@ func _process(delta: float) -> void:
 	autopilot_active = idle_seconds >= AUTOPILOT_IDLE_SECONDS
 	var sim: SailingSim = Voyage.sim
 	if _wheel_dragging:
+		note_player_helm()
+	if sim != null:
+		var wheel_target := 0.0
+		if player_helm_active():
+			# 플레이어 조타 중(또는 손을 뗀 직후): 휠 각도가 곧 타각. 손을 떼면 휠이 중립으로 돌아가며 타도 따라간다.
+			sim.rudder = clampf(_wheel_heading, -1.0, 1.0)
+		else:
+			# 선장 조타 중: 휠이 시뮬레이션 타각을 따라 돈다.
+			wheel_target = deg_to_rad(sim.rudder * WHEEL_DEG_PER_RUDDER)
+		for wheel in _wheels:
+			wheel.external_target = wheel_target
+	if _wheel_dragging:
 		heading = _wheel_heading
 	elif sim != null:
 		# 배경 패럴랙스는 실제 타각을 따라간다(선장이 휠을 돌리면 화면도 돈다).
 		heading = lerpf(heading, clampf(sim.rudder, -1.0, 1.0) * 0.8, minf(1.0, delta * 2.0))
-	if sim != null:
-		var wheel_target := deg_to_rad(sim.rudder * WHEEL_DEG_PER_RUDDER)
-		for wheel in _wheels:
-			wheel.external_target = wheel_target
 		AudioManager.set_wind(Voyage.wind.speed, Voyage.wind.gust_intensity)
 	if _boat != null:
 		AudioManager.set_wave_phase(_boat.bob_normalized)
@@ -158,6 +170,24 @@ func _update_debug_label(delta: float) -> void:
 func _on_wheel_heading_changed(value: float, wheel: Node) -> void:
 	_wheel_heading = value
 	_wheel_dragging = wheel.is_dragging
+
+
+# ---------------------------------------------------------------- 플레이어 개입(선장과 역할 교대)
+
+func note_player_helm() -> void:
+	_player_helm_until = time_elapsed + PLAYER_HANDOVER_SECONDS
+
+
+func note_player_sail() -> void:
+	_player_sail_until = time_elapsed + PLAYER_HANDOVER_SECONDS
+
+
+func player_helm_active() -> bool:
+	return _wheel_dragging or time_elapsed < _player_helm_until
+
+
+func player_sail_active() -> bool:
+	return time_elapsed < _player_sail_until
 
 
 # ---------------------------------------------------------------- FPS / 포커스

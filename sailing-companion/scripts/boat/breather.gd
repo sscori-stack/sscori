@@ -9,6 +9,13 @@ extends PlaceholderSprite
 ## 캐릭터마다 다르게 주어 위상을 어긋나게 한다(초).
 @export var phase_offset: float = 0.0
 
+## 바라보는 방향(1 = 원본, -1 = 좌우 반전). 컨트롤러가 바꾼다.
+var facing: float = 1.0
+## 포즈용 추가 배율(예: 기지개). 컨트롤러가 바꾼다.
+var pose_scale: Vector2 = Vector2.ONE
+## 포즈용 기울기(라디안). 컨트롤러가 바꾼다.
+var pose_skew: float = 0.0
+
 var _base_scale: Vector2
 var _t: float = 0.0
 
@@ -27,7 +34,8 @@ func _process(delta: float) -> void:
 		b = _ease_in_out(u / inhale_ratio)
 	else:
 		b = 1.0 - _ease_in_out((u - inhale_ratio) / (1.0 - inhale_ratio))
-	scale = _base_scale * Vector2(1.0, 1.0 + breath_amount * b)
+	scale = _base_scale * Vector2(facing, 1.0 + breath_amount * b) * pose_scale
+	skew = pose_skew
 
 
 static func _ease_in_out(x: float) -> float:

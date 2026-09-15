@@ -4,6 +4,8 @@ extends Node
 ## 종료 코드 0 = 전부 통과, 1 = 실패 있음.
 
 var _frames := 0
+var _captain_x0 := 0.0
+var _captain_walk_seen := false
 var _main: Node
 var _report := []
 
@@ -89,9 +91,32 @@ func _process(_delta: float) -> void:
 		# 오토파일럿 강제
 		_main.idle_seconds = 30.0
 	if _frames == 200:
-		var voyage := get_node("/root/Voyage")
-		_check("Voyage sim running", voyage.sim != null and voyage.sim.sim_time_hours > 0.0)
-		_check("Voyage progress > 0", voyage.sim.progress() > 0.0)
+		var crew := _main.get_node("Boat/Crew")
+		var voyage0 := get_node("/root/Voyage")
+		_check("Crew disabled sim auto-execute", voyage0.sim.auto_execute_enabled == false)
+		# 돛을 크게 어긋나게 만들면 선장이 윈치로 걸어가 당겨야 한다
+		voyage0.sim.sail_angle = clampf(voyage0.sim.target_sail_angle + 40.0, 5.0, 90.0)
+		crew._think_timer = 0.0
+		_captain_x0 = _main.get_node("Boat/Captain").position.x
+	if _frames == 260:
+		var crew := _main.get_node("Boat/Crew")
+		print("  captain state=%s at=%s pos=%s role=%s" % [crew.state_name(), crew.at_spot, _main.get_node("Boat/Captain").position, crew.role])
+		_check("Captain at or heading to winch", _main.get_node("Boat/Captain").position.x < _captain_x0 - 5.0 or crew.at_spot == "winch")
+		_captain_walk_seen = crew.state_name() == "WALKING" or crew.at_spot == "winch"
+	if _frames == 520:
+		var crew := _main.get_node("Boat/Crew")
+		var voyage0 := get_node("/root/Voyage")
+		print("  captain state=%s at=%s sail=%.1f target=%.1f" % [crew.state_name(), crew.at_spot, voyage0.sim.sail_angle, voyage0.sim.target_sail_angle])
+		_check("Captain reached winch or pulling", crew.at_spot == "winch" or _captain_walk_seen)
+		_check("Sail trimmed toward target by captain", absf(voyage0.sim.sail_angle - voyage0.sim.target_sail_angle) < 25.0)
+		# 플레이어가 휠을 잡으면 역할이 sails 로
+		_main.note_player_helm()
+	if _frames == 525:
+		_check("Role swaps to sails when player steers", _main.get_node("Boat/Crew").role == "sails")
+	if _frames == 530:
+		var voyage0 := get_node("/root/Voyage")
+		_check("Voyage sim running", voyage0.sim != null and voyage0.sim.sim_time_hours > 0.0)
+		_check("Voyage progress > 0", voyage0.sim.progress() > 0.0)
 		_check("Voyage label shows leg", "→" in _main.get_node("UI/Hud/VoyageLabel").text)
 		_check("Windex exists and rotates finitely", is_finite(_main.get_node("Boat/Windex").rotation))
 		_check("Telltale has points", _main.get_node("Boat/Telltale").points.size() >= 3)
@@ -99,7 +124,7 @@ func _process(_delta: float) -> void:
 		var sail := _main.get_node("Boat/Sail")
 		_check("Sail scale finite and nonzero", is_finite(sail.scale.x) and sail.scale.x != 0.0 and sail.scale.y > 0.0)
 		print("  sail scale=%s heel_visual=%.2f hud compass size=%s" % [sail.scale, _main.get_node("Boat").heel_visual, _main.get_node("UI/Hud/CompassStrip").size])
-		print("  ", voyage.summary_text().replace("\n", " | "))
+		print("  ", voyage0.summary_text().replace("\n", " | "))
 		_check("Autopilot active", _main.autopilot_active)
 		_check("Horizon zooming", _main.get_node("Horizon").scale.x > 1.0)
 		print("  fps cap=", Engine.max_fps, " low_proc=", OS.low_processor_usage_mode)

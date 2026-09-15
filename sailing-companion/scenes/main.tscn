@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3]
+[gd_scene load_steps=24 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/layers/placeholder_sprite.gd" id="2_placeholder"]
@@ -20,6 +20,8 @@
 [ext_resource type="Script" path="res://scripts/ui/compass_strip.gd" id="18_compass"]
 [ext_resource type="Script" path="res://scripts/ui/wind_widget.gd" id="19_wind"]
 [ext_resource type="Script" path="res://scripts/ui/voyage_label.gd" id="20_voyage"]
+[ext_resource type="Script" path="res://scripts/boat/captain.gd" id="21_captain"]
+[ext_resource type="Script" path="res://scripts/boat/captain_controller.gd" id="22_crew"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar"]
 content_margin_left = 8.0
@@ -75,7 +77,7 @@ pivot_normalized = Vector2(0.5, 1)
 [node name="Sea" type="Sprite2D" parent="."]
 position = Vector2(225, 150)
 script = ExtResource("5_sea")
-boat = NodePath("../Boat")
+boat_path = NodePath("../Boat")
 counter_amplitude = 1.5
 parallax_px = 60.0
 texture_path = "res://assets/art/sea.png"
@@ -122,9 +124,17 @@ placeholder_size = Vector2i(60, 34)
 placeholder_color = Color(0.78, 0.6, 0.42, 1)
 pivot_normalized = Vector2(0.5, 1)
 
+[node name="Winch" type="Sprite2D" parent="Boat"]
+position = Vector2(18, -56)
+script = ExtResource("2_placeholder")
+texture_path = "res://assets/art/winch.png"
+placeholder_size = Vector2i(22, 14)
+placeholder_color = Color(0.35, 0.3, 0.28, 1)
+pivot_normalized = Vector2(0.5, 1)
+
 [node name="Captain" type="Sprite2D" parent="Boat"]
 position = Vector2(95, -60)
-script = ExtResource("8_breather")
+script = ExtResource("21_captain")
 breath_period = 4.2
 texture_path = "res://assets/art/captain.png"
 placeholder_size = Vector2i(44, 78)
@@ -150,6 +160,15 @@ script = ExtResource("2_placeholder")
 placeholder_size = Vector2i(6, 24)
 placeholder_color = Color(0.8, 0.62, 0.4, 1)
 pivot_normalized = Vector2(0.5, 0.5)
+
+[node name="Crew" type="Node" parent="Boat"]
+script = ExtResource("22_crew")
+captain_path = NodePath("../Captain")
+otter_path = NodePath("../Otter")
+wheel_path = NodePath("../Wheel")
+helm_spot = Vector2(95, -60)
+winch_spot = Vector2(18, -56)
+otter_spot = Vector2(128, -58)
 
 [node name="Cockpit" type="Sprite2D" parent="Boat"]
 position = Vector2(0, -36)
