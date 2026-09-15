@@ -162,8 +162,9 @@ ASSETS: list[Asset] = [
     Asset("captain_walk_anim", "the tabby cat captain walking calmly to the right in profile, unhurried stride; "
           "frame 1: left foot forward; frame 2: feet passing, body slightly up; frame 3: right foot forward; frame 4: feet passing, body slightly down",
           (88, 156), transparent=True, aspect="16:9", anchor="bottom", use_captain_ref=True, frames=4, out_prefix="captain_walk"),
-    Asset("captain_pull_anim", "the tabby cat captain standing and pulling a rope with both paws; "
-          "frame 1: paws reaching forward to grab the rope; frame 2: leaning back, pulling the rope in; frame 3: paws brought to the chest, rope taut",
+    Asset("captain_pull_anim", "the tabby cat captain standing in profile and hauling on a SHORT rope held close to its body with both paws "
+          "(the rope is only a short length between the paws and the chest, it never extends outside the character's own frame); "
+          "frame 1: paws reaching a little forward to grab the rope; frame 2: leaning back slightly, pulling; frame 3: paws brought to the chest, rope taut",
           (88, 156), transparent=True, aspect="16:9", anchor="bottom", use_captain_ref=True, frames=3, out_prefix="captain_pull"),
     Asset("captain_steer_anim", "the tabby cat captain sitting on a small bench seen from behind, one paw raised to the side as if on an invisible ship's wheel (NO wheel drawn); "
           "frame 1: paw resting; frame 2: paw turned a little, head tilted",
