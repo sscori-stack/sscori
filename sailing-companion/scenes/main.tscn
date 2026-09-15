@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/layers/placeholder_sprite.gd" id="2_placeholder"]
@@ -8,6 +8,10 @@
 [ext_resource type="Script" path="res://scripts/boat/boat.gd" id="6_boat"]
 [ext_resource type="Script" path="res://scripts/boat/sail.gd" id="7_sail"]
 [ext_resource type="Script" path="res://scripts/boat/breather.gd" id="8_breather"]
+[ext_resource type="Script" path="res://scripts/boat/wheel.gd" id="9_wheel"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_wheel"]
+radius = 32.0
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -101,6 +105,28 @@ texture_path = "res://assets/art/captain.png"
 placeholder_size = Vector2i(44, 78)
 placeholder_color = Color(0.6, 0.42, 0.25, 1)
 pivot_normalized = Vector2(0.5, 1)
+
+[node name="Wheel" type="Area2D" parent="Boat" groups=["wheel"]]
+position = Vector2(70, -62)
+script = ExtResource("9_wheel")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Boat/Wheel"]
+shape = SubResource("CircleShape2D_wheel")
+
+[node name="WheelSprite" type="Sprite2D" parent="Boat/Wheel"]
+script = ExtResource("2_placeholder")
+texture_path = "res://assets/art/wheel.png"
+placeholder_size = Vector2i(60, 60)
+placeholder_color = Color(0.33, 0.2, 0.1, 1)
+placeholder_shape = 1
+pivot_normalized = Vector2(0.5, 0.5)
+
+[node name="WheelSpoke" type="Sprite2D" parent="Boat/Wheel"]
+position = Vector2(0, -22)
+script = ExtResource("2_placeholder")
+placeholder_size = Vector2i(6, 24)
+placeholder_color = Color(0.8, 0.62, 0.4, 1)
+pivot_normalized = Vector2(0.5, 0.5)
 
 [node name="Cockpit" type="Sprite2D" parent="Boat"]
 script = ExtResource("2_placeholder")

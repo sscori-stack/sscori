@@ -8,6 +8,8 @@ const SCREEN_MARGIN := 16
 const FPS_ACTIVE := 30
 const FPS_IDLE := 15
 const AUTOPILOT_IDLE_SECONDS := 20.0
+## 오토파일럿 중 heading 이 0 으로 되돌아가는 속도(초당 비율).
+const AUTOPILOT_RETURN_RATE := 0.15
 
 ## 다른 노드가 참조할 수 있는 단일 인스턴스 (씬은 하나뿐이다).
 static var instance: SailingMain
@@ -21,6 +23,9 @@ var idle_seconds: float = 0.0
 ## 입력 없이 AUTOPILOT_IDLE_SECONDS 이상 지나면 true.
 var autopilot_active: bool = false
 
+var _wheel_heading: float = 0.0
+var _wheel_dragging: bool = false
+
 var _dragging_window := false
 var _drag_offset := Vector2i.ZERO
 var _app_focused := true
@@ -32,6 +37,8 @@ func _ready() -> void:
 	OS.low_processor_usage_mode = true
 	_setup_window()
 	_update_fps()
+	for wheel in get_tree().get_nodes_in_group("wheel"):
+		wheel.heading_changed.connect(_on_wheel_heading_changed.bind(wheel))
 
 
 func _exit_tree() -> void:
@@ -108,6 +115,16 @@ func _process(delta: float) -> void:
 	time_elapsed += delta
 	idle_seconds += delta
 	autopilot_active = idle_seconds >= AUTOPILOT_IDLE_SECONDS
+	if autopilot_active and not _wheel_dragging:
+		# 휠은 이미 스스로 복귀하지만, 오토파일럿은 등대 방향(0)을 아주 천천히 유지한다.
+		heading = lerpf(heading, 0.0, minf(1.0, delta * AUTOPILOT_RETURN_RATE))
+	else:
+		heading = _wheel_heading
+
+
+func _on_wheel_heading_changed(value: float, wheel: Node) -> void:
+	_wheel_heading = value
+	_wheel_dragging = wheel.is_dragging
 
 
 # ---------------------------------------------------------------- FPS / 포커스
