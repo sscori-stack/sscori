@@ -5,6 +5,8 @@ extends PanelContainer
 @onready var _share_button: Button = %ShareButton
 @onready var _settings_popup: PopupPanel = %SettingsPopup
 @onready var _music_widget: HBoxContainer = %MusicWidget
+@onready var _chart_button: Button = %ChartButton
+@onready var _chart_inset: Control = %ChartInset
 
 
 func _enter_tree() -> void:
@@ -17,6 +19,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_settings_button.pressed.connect(_on_settings_pressed)
 	_share_button.pressed.connect(_on_share_pressed)
+	_chart_button.pressed.connect(func() -> void: _chart_inset.visible = not _chart_inset.visible)
 	_settings_popup.popup_hide.connect(func() -> void: _music_widget.refresh())
 	# 씬 인스턴스화 중 계산된 최소 크기 캐시가 테마 적용 후에도 남을 수 있어 한 번 재계산한다.
 	_refresh_minimum_sizes.call_deferred()
@@ -29,7 +32,7 @@ func _refresh_minimum_sizes() -> void:
 
 
 func _on_settings_pressed() -> void:
-	_settings_popup.popup_centered(Vector2i(220, 200))
+	_settings_popup.popup_centered(Vector2i(230, 262))
 
 
 func _on_share_pressed() -> void:

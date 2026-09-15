@@ -50,6 +50,7 @@ func _ready() -> void:
 	_update_fps()
 	_boat = get_tree().get_first_node_in_group("boat") as Boat
 	_wheels = get_tree().get_nodes_in_group("wheel")
+	Voyage.arrived.connect(func(_id: String) -> void: AudioManager.play_bell())
 	for wheel in _wheels:
 		wheel.heading_changed.connect(_on_wheel_heading_changed.bind(wheel))
 

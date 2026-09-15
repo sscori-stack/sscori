@@ -2,7 +2,7 @@ class_name IconButton
 extends Button
 ## 아이콘 버튼. texture_path 의 PNG 가 있으면 그것을 아이콘으로 쓰고, 없으면 _draw 로 벡터 아이콘을 그린다.
 
-enum Kind { GEAR, SHARE, TRIANGLE_DOWN, TRIANGLE_UP }
+enum Kind { GEAR, SHARE, TRIANGLE_DOWN, TRIANGLE_UP, CHART }
 
 @export var kind: Kind = Kind.GEAR:
 	set(value):
@@ -42,3 +42,9 @@ func _draw() -> void:
 			draw_colored_polygon(PackedVector2Array([c + Vector2(-5, -3), c + Vector2(5, -3), c + Vector2(0, 4)]), icon_color)
 		Kind.TRIANGLE_UP:
 			draw_colored_polygon(PackedVector2Array([c + Vector2(-5, 3), c + Vector2(5, 3), c + Vector2(0, -4)]), icon_color)
+		Kind.CHART:
+			# 접힌 지도: 세 칸 + 지그재그 경로
+			draw_rect(Rect2(c + Vector2(-8, -6), Vector2(16, 12)), icon_color, false, 1.5)
+			draw_line(c + Vector2(-2.5, -6), c + Vector2(-2.5, 6), icon_color, 1.0)
+			draw_line(c + Vector2(2.5, -6), c + Vector2(2.5, 6), icon_color, 1.0)
+			draw_polyline(PackedVector2Array([c + Vector2(-6, 3), c + Vector2(-3, -2), c + Vector2(1, 2), c + Vector2(6, -3)]), icon_color.darkened(0.1), 1.5)

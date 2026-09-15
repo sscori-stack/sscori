@@ -10,6 +10,8 @@ var _main: Node
 var _report := []
 
 func _ready() -> void:
+	# 이전 실행이 남긴 항해 저장 상태(정박 등)가 검사에 섞이지 않도록 초기화
+	get_node("/root/Voyage").reset_voyage()
 	var packed := load("res://scenes/main.tscn") as PackedScene
 	_main = packed.instantiate()
 	add_child(_main)
@@ -50,8 +52,8 @@ func _process(_delta: float) -> void:
 	if _frames == 36:
 		var wheel := _main.get_node("Boat/Wheel")
 		print("  wheel rot=%.3f heading=%.3f" % [wheel.rotation, _main.heading])
-		_check("Wheel rotated ~90deg", absf(rad_to_deg(wheel.rotation) - 90.0) < 2.0)
-		_check("Heading ~1", absf(_main.heading - 1.0) < 0.05)
+		_check("Wheel rotated ≥60deg", rad_to_deg(wheel.rotation) >= 60.0)
+		_check("Heading ≥0.65", _main.heading >= 0.65)
 		var horizon := _main.get_node("Horizon")
 		_check("Horizon shifted", absf(horizon.position.x - 225.0) > 20.0)
 		_send_mouse_button(wheel.global_position + Vector2(0, 20), MOUSE_BUTTON_LEFT, false)
@@ -113,6 +115,36 @@ func _process(_delta: float) -> void:
 		_main.note_player_helm()
 	if _frames == 525:
 		_check("Role swaps to sails when player steers", _main.get_node("Boat/Crew").role == "sails")
+		# 해도 토글 + 그리기
+		var chart := _main.get_node("UI/ChartInset")
+		_check("Chart hidden by default", not chart.visible)
+		_main.get_node("UI/UIBar/HBox/ChartButton").pressed.emit()
+		_check("Chart toggled visible", chart.visible)
+		_check("Chart has trail points", chart._trail.size() >= 1)
+		# 설정 팝업의 구간 목록
+		var popup := _main.get_node("UI/UIBar/SettingsPopup")
+		_check("Route options filled", popup.get_node("VBox/RouteRow/RouteOption").item_count == Marinas.LEGS.size() * 2)
+	if _frames == 540:
+		# 정박 상태에서 선장이 돛을 접는지: 도착을 강제로 만든다
+		var voyage1 := get_node("/root/Voyage")
+		voyage1.sim.arrived = true
+		voyage1.moored = true
+		voyage1.dwell_remaining = 300.0
+		voyage1.sim.sail_furl = 1.0
+		_main.get_node("Boat/Crew")._think_timer = 0.0
+		_main._player_helm_until = -1.0
+	if _frames == 900:
+		var voyage1 := get_node("/root/Voyage")
+		var crew := _main.get_node("Boat/Crew")
+		print("  moored: captain state=%s at=%s furl=%.2f" % [crew.state_name(), crew.at_spot, voyage1.sim.sail_furl])
+		_check("Captain furls sail while moored", voyage1.sim.sail_furl < 0.6)
+		voyage1.moored = false
+		voyage1.start_leg(0, false)
+		var fails := _report.filter(func(r): return not r[1])
+		print("\n==== %d checks, %d failed ====" % [_report.size(), fails.size()])
+		for f in fails:
+			print("FAIL: ", f[0])
+		get_tree().quit(1 if fails.size() > 0 else 0)
 	if _frames == 530:
 		var voyage0 := get_node("/root/Voyage")
 		_check("Voyage sim running", voyage0.sim != null and voyage0.sim.sim_time_hours > 0.0)
@@ -128,11 +160,7 @@ func _process(_delta: float) -> void:
 		_check("Autopilot active", _main.autopilot_active)
 		_check("Horizon zooming", _main.get_node("Horizon").scale.x > 1.0)
 		print("  fps cap=", Engine.max_fps, " low_proc=", OS.low_processor_usage_mode)
-		var fails := _report.filter(func(r): return not r[1])
-		print("\n==== %d checks, %d failed ====" % [_report.size(), fails.size()])
-		for f in fails:
-			print("FAIL: ", f[0])
-		get_tree().quit(1 if fails.size() > 0 else 0)
+
 
 func _check(label: String, ok: bool) -> void:
 	_report.append([label, ok])

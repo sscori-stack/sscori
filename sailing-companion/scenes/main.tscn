@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=3]
+[gd_scene load_steps=25 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/layers/placeholder_sprite.gd" id="2_placeholder"]
@@ -22,6 +22,7 @@
 [ext_resource type="Script" path="res://scripts/ui/voyage_label.gd" id="20_voyage"]
 [ext_resource type="Script" path="res://scripts/boat/captain.gd" id="21_captain"]
 [ext_resource type="Script" path="res://scripts/boat/captain_controller.gd" id="22_crew"]
+[ext_resource type="Script" path="res://scripts/ui/chart_inset.gd" id="23_chart"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar"]
 content_margin_left = 8.0
@@ -226,6 +227,15 @@ offset_right = 442.0
 offset_bottom = 55.0
 script = ExtResource("19_wind")
 
+[node name="ChartInset" type="Control" parent="UI"]
+unique_name_in_owner = true
+visible = false
+offset_left = 6.0
+offset_top = 38.0
+offset_right = 206.0
+offset_bottom = 168.0
+script = ExtResource("23_chart")
+
 [node name="UIBar" type="PanelContainer" parent="UI"]
 anchors_preset = 12
 anchor_top = 1.0
@@ -259,6 +269,15 @@ size_flags_vertical = 4
 script = ExtResource("11_icon_button")
 kind = 1
 texture_path = "res://assets/art/ui_btn_share.png"
+
+[node name="ChartButton" type="Button" parent="UI/UIBar/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+size_flags_vertical = 4
+script = ExtResource("11_icon_button")
+kind = 4
+texture_path = "res://assets/art/ui_btn_chart.png"
 
 [node name="Clock" type="Control" parent="UI/UIBar/HBox"]
 custom_minimum_size = Vector2(30, 30)

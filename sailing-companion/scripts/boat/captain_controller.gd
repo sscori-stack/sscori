@@ -116,7 +116,7 @@ func _think(delta: float) -> void:
 		return
 
 	var need_trim := _needs_trim() and role != "helm"
-	var need_steer := role != "sails"
+	var need_steer := role != "sails" and not Voyage.moored
 
 	# 1) 돛이 많이 어긋났으면 윈치로 (이미 있으면 바로 당김)
 	if need_trim:
@@ -141,7 +141,14 @@ func _think(delta: float) -> void:
 	state = State.STEERING if (need_steer and at_spot == "helm") else (State.IDLE_WINCH if at_spot == "winch" else State.IDLE_HELM)
 
 
+## 정박 중엔 돛을 접는 것이 목표.
+func _wanted_furl() -> float:
+	return SailingSim.SAIL_FURL_MIN if Voyage.moored else _sim.target_sail_furl
+
+
 func _needs_trim() -> bool:
+	if Voyage.moored:
+		return _sim.sail_furl > SailingSim.SAIL_FURL_MIN + 0.02
 	return absf(_sim.sail_angle - _sim.target_sail_angle) > sail_deadband_deg \
 		or absf(_sim.sail_furl - _sim.target_sail_furl) > furl_deadband
 
@@ -192,7 +199,7 @@ func _start_pull() -> void:
 	_tug_from_angle = _sim.sail_angle
 	_tug_to_angle = _sim.target_sail_angle
 	_tug_from_furl = _sim.sail_furl
-	_tug_to_furl = _sim.target_sail_furl
+	_tug_to_furl = _wanted_furl()
 	captain.set_pose("pull")
 	captain.facing = 1.0
 

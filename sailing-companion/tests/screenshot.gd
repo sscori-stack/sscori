@@ -6,6 +6,7 @@ var _f := 0
 var _main: Node
 var _out := "user://screenshot.png"
 var _frames := 90
+var _chart := false
 
 
 func _ready() -> void:
@@ -14,12 +15,16 @@ func _ready() -> void:
 			_out = arg.substr(4)
 		elif arg.begins_with("frames="):
 			_frames = int(arg.substr(7))
+		elif arg == "chart=1":
+			_chart = true
 	_main = (load("res://scenes/main.tscn") as PackedScene).instantiate()
 	add_child(_main)
 
 
 func _process(_d: float) -> void:
 	_f += 1
+	if _f == 2 and _chart:
+		_main.get_node("UI/ChartInset").visible = true
 	if _f == _frames:
 		await RenderingServer.frame_post_draw
 		var img := get_viewport().get_texture().get_image()
