@@ -8,8 +8,8 @@ const SCREEN_MARGIN := 16
 const FPS_ACTIVE := 30
 const FPS_IDLE := 15
 const AUTOPILOT_IDLE_SECONDS := 20.0
-## 오토파일럿 중 heading 이 0 으로 되돌아가는 속도(초당 비율).
-const AUTOPILOT_RETURN_RATE := 0.15
+## 시뮬레이션 타각(-1~1)을 휠 회전각(도)으로 바꾸는 배율.
+const WHEEL_DEG_PER_RUDDER := 60.0
 
 ## 다른 노드가 참조할 수 있는 단일 인스턴스 (씬은 하나뿐이다).
 static var instance: SailingMain
@@ -22,13 +22,14 @@ var time_elapsed: float = 0.0
 var idle_seconds: float = 0.0
 ## 입력 없이 AUTOPILOT_IDLE_SECONDS 이상 지나면 true.
 var autopilot_active: bool = false
-## 항해 상태 디버그 라벨 표시 여부(9단계에서 정식 위젯으로 대체 예정).
-@export var show_voyage_debug: bool = true
+## 항해 상태 디버그 라벨 표시 여부(HUD 위젯이 대체했으므로 기본 꺼짐).
+@export var show_voyage_debug: bool = false
 
 var _debug_label: Label
 var _debug_timer: float = 0.0
 
 var _boat: Boat
+var _wheels: Array = []
 var _wheel_heading: float = 0.0
 var _wheel_dragging: bool = false
 
@@ -44,7 +45,8 @@ func _ready() -> void:
 	_setup_window()
 	_update_fps()
 	_boat = get_tree().get_first_node_in_group("boat") as Boat
-	for wheel in get_tree().get_nodes_in_group("wheel"):
+	_wheels = get_tree().get_nodes_in_group("wheel")
+	for wheel in _wheels:
 		wheel.heading_changed.connect(_on_wheel_heading_changed.bind(wheel))
 
 
@@ -122,11 +124,17 @@ func _process(delta: float) -> void:
 	time_elapsed += delta
 	idle_seconds += delta
 	autopilot_active = idle_seconds >= AUTOPILOT_IDLE_SECONDS
-	if autopilot_active and not _wheel_dragging:
-		# 휠은 이미 스스로 복귀하지만, 오토파일럿은 등대 방향(0)을 아주 천천히 유지한다.
-		heading = lerpf(heading, 0.0, minf(1.0, delta * AUTOPILOT_RETURN_RATE))
-	else:
+	var sim: SailingSim = Voyage.sim
+	if _wheel_dragging:
 		heading = _wheel_heading
+	elif sim != null:
+		# 배경 패럴랙스는 실제 타각을 따라간다(선장이 휠을 돌리면 화면도 돈다).
+		heading = lerpf(heading, clampf(sim.rudder, -1.0, 1.0) * 0.8, minf(1.0, delta * 2.0))
+	if sim != null:
+		var wheel_target := deg_to_rad(sim.rudder * WHEEL_DEG_PER_RUDDER)
+		for wheel in _wheels:
+			wheel.external_target = wheel_target
+		AudioManager.set_wind(Voyage.wind.speed, Voyage.wind.gust_intensity)
 	if _boat != null:
 		AudioManager.set_wave_phase(_boat.bob_normalized)
 	_update_debug_label(delta)

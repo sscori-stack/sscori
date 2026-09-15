@@ -8,6 +8,9 @@ extends PlaceholderSprite
 ## heading = ±1 일 때 좌우 최대 픽셀.
 @export var parallax_px: float = 60.0
 
+## 강풍일 때 섞을 색(채도 낮고 살짝 어두운 바다).
+@export var strong_wind_tint: Color = Color(0.8, 0.84, 0.92)
+
 var _base_position: Vector2
 
 
@@ -22,3 +25,6 @@ func _process(_delta: float) -> void:
 		bob = boat.bob_normalized
 	var heading := SailingMain.instance.heading if SailingMain.instance else 0.0
 	position = _base_position + Vector2(-heading * parallax_px, -bob * counter_amplitude)
+	if Voyage.wind != null:
+		var wind_norm := clampf((Voyage.wind.speed - 5.0) / 20.0, 0.0, 1.0)
+		modulate = modulate.lerp(Color.WHITE.lerp(strong_wind_tint, wind_norm * 0.6), minf(1.0, _delta * 0.5))

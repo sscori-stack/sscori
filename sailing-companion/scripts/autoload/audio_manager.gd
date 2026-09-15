@@ -20,6 +20,8 @@ var bell: AudioStreamPlayer
 
 var _waves_mod_target: float = 0.0
 var _waves_mod: float = 0.0
+var _wind_db_target: float = 0.0
+var _wind_db: float = 0.0
 
 
 func _ready() -> void:
@@ -41,7 +43,8 @@ func _process(delta: float) -> void:
 	if waves.stream == null:
 		return
 	_waves_mod = lerpf(_waves_mod, _waves_mod_target, minf(1.0, delta * WAVES_MOD_SMOOTH))
-	waves.volume_db = _linear_db(Settings.ambient_volume) + _waves_mod
+	_wind_db = lerpf(_wind_db, _wind_db_target, minf(1.0, delta * 0.5))
+	waves.volume_db = _linear_db(Settings.ambient_volume) + _waves_mod + _wind_db
 
 
 # ---------------------------------------------------------------- 외부 API
@@ -49,6 +52,12 @@ func _process(delta: float) -> void:
 ## Main 이 매 프레임 Boat 의 상하 위상(-1~1)을 넘긴다.
 func set_wave_phase(normalized: float) -> void:
 	_waves_mod_target = clampf(normalized, -1.0, 1.0) * WAVES_MOD_DB
+
+
+## 풍속(노트)·거스트 세기(0~1)에 따라 파도 소리를 최대 +3dB/+2dB 키운다.
+func set_wind(speed_kn: float, gust_intensity: float) -> void:
+	var norm := clampf((speed_kn - 5.0) / 20.0, 0.0, 1.0)
+	_wind_db_target = norm * 3.0 + clampf(gust_intensity, 0.0, 1.0) * 2.0
 
 
 func set_ambient_volume(linear: float) -> void:

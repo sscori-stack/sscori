@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/layers/placeholder_sprite.gd" id="2_placeholder"]
@@ -15,6 +15,11 @@
 [ext_resource type="Script" path="res://scripts/ui/pomodoro.gd" id="13_pomodoro"]
 [ext_resource type="Script" path="res://scripts/ui/music_widget.gd" id="14_music"]
 [ext_resource type="PackedScene" path="res://scenes/ui/settings_popup.tscn" id="15_popup"]
+[ext_resource type="Script" path="res://scripts/boat/windex.gd" id="16_windex"]
+[ext_resource type="Script" path="res://scripts/boat/telltale.gd" id="17_telltale"]
+[ext_resource type="Script" path="res://scripts/ui/compass_strip.gd" id="18_compass"]
+[ext_resource type="Script" path="res://scripts/ui/wind_widget.gd" id="19_wind"]
+[ext_resource type="Script" path="res://scripts/ui/voyage_label.gd" id="20_voyage"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar"]
 content_margin_left = 8.0
@@ -91,6 +96,14 @@ placeholder_size = Vector2i(130, 140)
 placeholder_color = Color(0.97, 0.95, 0.9, 1)
 pivot_normalized = Vector2(0.5, 1)
 
+[node name="Windex" type="Node2D" parent="Boat"]
+position = Vector2(55, -236)
+script = ExtResource("16_windex")
+
+[node name="Telltale" type="Line2D" parent="Boat"]
+position = Vector2(88, -150)
+script = ExtResource("17_telltale")
+
 [node name="Deck" type="Sprite2D" parent="Boat"]
 position = Vector2(0, -5)
 script = ExtResource("2_placeholder")
@@ -158,6 +171,40 @@ theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.6)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 9
+
+[node name="Hud" type="Control" parent="UI"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="VoyageLabel" type="Label" parent="UI/Hud"]
+offset_left = 8.0
+offset_top = 5.0
+offset_right = 200.0
+offset_bottom = 32.0
+theme_override_colors/font_color = Color(1, 1, 1, 0.92)
+theme_override_colors/font_shadow_color = Color(0, 0, 0, 0.55)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 1
+theme_override_font_sizes/font_size = 10
+text = "Monaco → Antibes  0%
+0.0 kn"
+script = ExtResource("20_voyage")
+
+[node name="CompassStrip" type="Control" parent="UI/Hud"]
+offset_left = 200.0
+offset_top = 5.0
+offset_right = 320.0
+offset_bottom = 19.0
+script = ExtResource("18_compass")
+
+[node name="WindWidget" type="Control" parent="UI/Hud"]
+offset_left = 396.0
+offset_top = 5.0
+offset_right = 442.0
+offset_bottom = 55.0
+script = ExtResource("19_wind")
 
 [node name="UIBar" type="PanelContainer" parent="UI"]
 anchors_preset = 12

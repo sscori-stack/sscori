@@ -10,6 +10,7 @@ extends PlaceholderSprite
 @export var extra_width: float = 20.0
 
 var _scroll: float = 0.0
+var _wind_factor: float = 1.0
 var _base_position: Vector2
 var _tex_width: float = 1.0
 
@@ -29,7 +30,12 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	_scroll = fmod(_scroll + scroll_speed * delta / scale.x, _tex_width)
+	# 풍속에 비례해 빨라지고, 바람이 우현(TWA>0)에서 오면 왼쪽으로(양수), 좌현이면 오른쪽으로 흐른다.
+	if Voyage.sim != null:
+		var lateral := sin(deg_to_rad(Voyage.sim.true_wind_angle()))
+		var target := (0.4 + 0.06 * Voyage.wind.speed) * clampf(lateral * 2.0, -1.0, 1.0)
+		_wind_factor = lerpf(_wind_factor, target, minf(1.0, delta * 0.2))
+	_scroll = fposmod(_scroll + scroll_speed * _wind_factor * delta / scale.x, _tex_width)
 	region_rect.position.x = _scroll
 	var heading := SailingMain.instance.heading if SailingMain.instance else 0.0
 	position.x = _base_position.x - parallax_px - extra_width * 0.5 - heading * parallax_px

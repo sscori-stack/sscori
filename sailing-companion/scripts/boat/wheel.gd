@@ -12,6 +12,8 @@ signal heading_changed(heading: float)
 @export var hit_radius: float = 32.0
 
 var is_dragging: bool = false
+## 드래그 중이 아닐 때 휠이 따라갈 목표 각(라디안). 선장/오토파일럿의 타각을 Main 이 넣어준다.
+var external_target: float = 0.0
 
 var _angle: float = 0.0
 var _last_mouse_angle: float = 0.0
@@ -54,11 +56,11 @@ func _mouse_angle() -> float:
 
 
 func _process(delta: float) -> void:
-	if not is_dragging and _angle != 0.0:
-		# return_time 안에 사실상 0 에 수렴하는 지수 감쇠 lerp
-		_angle = lerpf(_angle, 0.0, minf(1.0, delta * 4.0 / maxf(return_time, 0.01)))
-		if absf(_angle) < 0.0005:
-			_angle = 0.0
+	if not is_dragging and _angle != external_target:
+		# return_time 안에 사실상 목표에 수렴하는 지수 감쇠 lerp
+		_angle = lerpf(_angle, external_target, minf(1.0, delta * 4.0 / maxf(return_time, 0.01)))
+		if absf(_angle - external_target) < 0.0005:
+			_angle = external_target
 	rotation = _angle
 	var heading := _angle / deg_to_rad(max_angle_deg)
 	if heading != _last_emitted:
