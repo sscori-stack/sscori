@@ -89,6 +89,11 @@ func _process(_delta: float) -> void:
 		# 오토파일럿 강제
 		_main.idle_seconds = 30.0
 	if _frames == 200:
+		var voyage := get_node("/root/Voyage")
+		_check("Voyage sim running", voyage.sim != null and voyage.sim.sim_time_hours > 0.0)
+		_check("Voyage progress > 0", voyage.sim.progress() > 0.0)
+		_check("Debug label shows leg", "→" in _main.get_node("UI/DebugLabel").text)
+		print("  ", voyage.summary_text().replace("\n", " | "))
 		_check("Autopilot active", _main.autopilot_active)
 		_check("Horizon zooming", _main.get_node("Horizon").scale.x > 1.0)
 		print("  fps cap=", Engine.max_fps, " low_proc=", OS.low_processor_usage_mode)

@@ -22,6 +22,11 @@ var time_elapsed: float = 0.0
 var idle_seconds: float = 0.0
 ## 입력 없이 AUTOPILOT_IDLE_SECONDS 이상 지나면 true.
 var autopilot_active: bool = false
+## 항해 상태 디버그 라벨 표시 여부(9단계에서 정식 위젯으로 대체 예정).
+@export var show_voyage_debug: bool = true
+
+var _debug_label: Label
+var _debug_timer: float = 0.0
 
 var _boat: Boat
 var _wheel_heading: float = 0.0
@@ -124,6 +129,22 @@ func _process(delta: float) -> void:
 		heading = _wheel_heading
 	if _boat != null:
 		AudioManager.set_wave_phase(_boat.bob_normalized)
+	_update_debug_label(delta)
+
+
+func _update_debug_label(delta: float) -> void:
+	if _debug_label == null:
+		_debug_label = get_node_or_null("UI/DebugLabel") as Label
+		if _debug_label == null:
+			return
+	_debug_label.visible = show_voyage_debug
+	if not show_voyage_debug:
+		return
+	_debug_timer -= delta
+	if _debug_timer > 0.0:
+		return
+	_debug_timer = 0.5
+	_debug_label.text = Voyage.summary_text()
 
 
 func _on_wheel_heading_changed(value: float, wheel: Node) -> void:
