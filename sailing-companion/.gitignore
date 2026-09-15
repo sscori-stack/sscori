@@ -1,0 +1,5 @@
+# Godot 4 editor cache / imports
+.godot/
+# Local build output
+build/
+*.tmp
