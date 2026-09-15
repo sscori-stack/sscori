@@ -12,6 +12,9 @@ signal heading_changed(heading: float)
 @export var hit_radius: float = 32.0
 
 var is_dragging: bool = false
+## 손을 놓았을 때 파도에 따라 미세하게 흔들리는 폭(도).
+@export var wobble_deg: float = 1.5
+var _wobble_t: float = 0.0
 ## 드래그 중이 아닐 때 휠이 따라갈 목표 각(라디안). 선장/오토파일럿의 타각을 Main 이 넣어준다.
 var external_target: float = 0.0
 
@@ -61,7 +64,9 @@ func _process(delta: float) -> void:
 		_angle = lerpf(_angle, external_target, minf(1.0, delta * 4.0 / maxf(return_time, 0.01)))
 		if absf(_angle - external_target) < 0.0005:
 			_angle = external_target
-	rotation = _angle
+	_wobble_t += delta
+	var wobble := 0.0 if is_dragging else deg_to_rad(wobble_deg) * sin(_wobble_t * 0.9) * sin(_wobble_t * 0.37 + 1.0)
+	rotation = _angle + wobble
 	var heading := _angle / deg_to_rad(max_angle_deg)
 	if heading != _last_emitted:
 		_last_emitted = heading

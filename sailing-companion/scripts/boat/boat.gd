@@ -4,15 +4,15 @@ extends Node2D
 ## 피벗은 선체 하단 중앙(씬에서 position 으로 지정).
 
 @export_group("Bob (상하)")
-@export var bob_amplitude: float = 3.0
+@export var bob_amplitude: float = 4.5
 @export var bob_period: float = 7.0
 @export var bob_amplitude_2: float = 1.0
 @export var bob_period_2: float = 4.3
 
 @export_group("Roll (기울기)")
-@export var roll_amplitude_deg: float = 1.2
+@export var roll_amplitude_deg: float = 2.2
 @export var roll_period: float = 10.0
-@export var roll_amplitude_2_deg: float = 0.3
+@export var roll_amplitude_2_deg: float = 0.5
 @export var roll_period_2: float = 6.1
 
 @export_group("Pitch (scale.y)")
@@ -21,7 +21,7 @@ extends Node2D
 
 @export_group("Wind/Heel")
 ## 시뮬레이션 힐(도)을 화면 회전(도)으로 바꾸는 배율.
-@export var heel_visual_scale: float = 0.3
+@export var heel_visual_scale: float = 0.45
 ## 풍속 25kn 일 때 상하 진폭 배율(5kn 일 때 1.0 에서 선형).
 @export var wind_bob_multiplier: float = 1.8
 

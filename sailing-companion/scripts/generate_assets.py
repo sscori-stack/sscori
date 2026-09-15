@@ -73,6 +73,12 @@ REFERENCE_HINT = (
     "Use the attached reference image as the style guide: reproduce the same art style, brush feel, line weight and color palette. "
     "Draw ONLY the element described below, separated from the scene."
 )
+STRIP_HINT = (
+    "This is a SPRITE SHEET for a 2D game: draw exactly {n} frames of the SAME character in ONE horizontal row, "
+    "left to right, evenly spaced with clearly empty gaps between frames, every frame at the same scale, the character's feet on the same baseline, "
+    "identical outfit and colors in every frame (same hat, sweater, neckerchief). The frames are consecutive steps of one smooth looping animation: {steps}. "
+    "No frame borders, no numbers, no text, no arrows."
+)
 KEY_COLOR = (255, 0, 255)
 
 
@@ -87,11 +93,25 @@ class Asset:
     anchor: str = "bottom"         # 크기 맞출 때 정렬: bottom / center / cover
     use_captain_ref: bool = False  # captain.png 를 캐릭터 참조로 첨부
     no_style_ref: bool = False     # 색감 앵커(sky.png)를 첨부하지 않음(하늘을 따라 그리면 안 되는 항목)
+    frames: int = 0                # >0 이면 스프라이트 스트립: 가로로 frames 개 프레임을 한 장에 생성해 분할 저장
+    out_prefix: str = ""           # 스트립 분할 결과 파일 접두사(<prefix>_<n>.png). 비면 name 사용
     extra_refs: list[str] = field(default_factory=list)
 
     @property
     def path(self) -> Path:
         return ART_DIR / f"{self.name}.png"
+
+    @property
+    def prefix(self) -> str:
+        return self.out_prefix or self.name
+
+    def frame_path(self, i: int) -> Path:
+        return ART_DIR / f"{self.prefix}_{i}.png"
+
+    def outputs(self) -> list[Path]:
+        if self.frames > 0:
+            return [self.frame_path(i) for i in range(self.frames)]
+        return [self.path]
 
 
 ASSETS: list[Asset] = [
@@ -135,6 +155,28 @@ ASSETS: list[Asset] = [
           "with a soft smile, seen from the side. Full body, feet at the bottom. Only the cat.", (88, 156), transparent=True, aspect="3:4", anchor="bottom", use_captain_ref=True),
     Asset("captain_stretch", "The SAME tabby cat captain (same hat, sweater, neckerchief), standing and stretching its arms up with a big satisfied yawn, "
           "eyes closed, seen from the side. Full body, feet at the bottom. Only the cat.", (88, 156), transparent=True, aspect="3:4", anchor="bottom", use_captain_ref=True),
+    # ---- 프레임 애니메이션 스트립(선택): 있으면 captain.gd / otter.gd 가 자동으로 프레임 재생
+    Asset("captain_idle_anim", "the seated tabby cat captain on a wooden bench gazing calmly at the sea, seen from behind and slightly to the side; "
+          "frame 1: relaxed; frame 2: chest rises slightly, tail curls a little; frame 3: one ear twitches and the tail tip flicks",
+          (88, 156), transparent=True, aspect="16:9", anchor="bottom", use_captain_ref=True, frames=3, out_prefix="captain_idle"),
+    Asset("captain_walk_anim", "the tabby cat captain walking calmly to the right in profile, unhurried stride; "
+          "frame 1: left foot forward; frame 2: feet passing, body slightly up; frame 3: right foot forward; frame 4: feet passing, body slightly down",
+          (88, 156), transparent=True, aspect="16:9", anchor="bottom", use_captain_ref=True, frames=4, out_prefix="captain_walk"),
+    Asset("captain_pull_anim", "the tabby cat captain standing and pulling a rope with both paws; "
+          "frame 1: paws reaching forward to grab the rope; frame 2: leaning back, pulling the rope in; frame 3: paws brought to the chest, rope taut",
+          (88, 156), transparent=True, aspect="16:9", anchor="bottom", use_captain_ref=True, frames=3, out_prefix="captain_pull"),
+    Asset("captain_steer_anim", "the tabby cat captain sitting on a small bench seen from behind, one paw raised to the side as if on an invisible ship's wheel (NO wheel drawn); "
+          "frame 1: paw resting; frame 2: paw turned a little, head tilted",
+          (88, 156), transparent=True, aspect="16:9", anchor="bottom", use_captain_ref=True, frames=2, out_prefix="captain_steer"),
+    Asset("captain_pet_anim", "the tabby cat captain crouching low and gently patting something small in front of it with a soft smile, in profile; "
+          "frame 1: paw raised; frame 2: paw down patting",
+          (88, 156), transparent=True, aspect="16:9", anchor="bottom", use_captain_ref=True, frames=2, out_prefix="captain_pet"),
+    Asset("captain_stretch_anim", "the tabby cat captain standing and stretching with a yawn, in profile; "
+          "frame 1: arms halfway up, mouth opening; frame 2: arms fully up, big yawn, eyes closed; frame 3: arms coming down, satisfied smile",
+          (88, 156), transparent=True, aspect="16:9", anchor="bottom", use_captain_ref=True, frames=3, out_prefix="captain_stretch"),
+    Asset("otter_anim", "the cute sea otter curled up sleeping on a folded plaid blanket, seen from the side, eyes closed; "
+          "frame 1: resting; frame 2: belly rises with a breath, one ear twitches; frame 3: paws tuck a little tighter, tiny content smile",
+          (120, 68), transparent=True, aspect="16:9", anchor="bottom", frames=3, out_prefix="otter", extra_refs=["otter.png"]),
     Asset("wheel", "A classic wooden ship's steering wheel with eight turned spokes and handles and a brass hub, seen exactly from the front, "
           "perfectly centered so the hub is the exact center of the image. Only the wheel.", (120, 120), transparent=True, aspect="1:1", anchor="center"),
     Asset("windex", "A tiny masthead wind vane (windex): a slim red arrow pointing straight up with a small tail fin, brass pivot at the center. "
@@ -317,6 +359,83 @@ def fit_to(img: Image.Image, size: tuple[int, int], anchor: str) -> Image.Image:
     return canvas
 
 
+def split_strip(img: Image.Image, n: int, min_gap: int = 4) -> list[Image.Image]:
+    """가로 스트립(RGBA)을 투명 열(gap)로 나눠 n 개 프레임으로. 조각 수가 n 과 다르면 가장 큰 n 개를 취하고,
+    그래도 부족하면 균등 분할로 대체한다."""
+    alpha = img.getchannel("A")
+    w, h = img.size
+    px = alpha.load()
+    col_has = [any(px[x, y] > 40 for y in range(0, h, 2)) for x in range(w)]
+    segments: list[tuple[int, int]] = []
+    start = None
+    gap = 0
+    for x, has in enumerate(col_has):
+        if has:
+            if start is None:
+                start = x
+            gap = 0
+        else:
+            if start is not None:
+                gap += 1
+                if gap >= min_gap:
+                    segments.append((start, x - gap + 1))
+                    start = None
+                    gap = 0
+    if start is not None:
+        segments.append((start, w))
+    segments = [s for s in segments if s[1] - s[0] >= 8]
+    if len(segments) > n:
+        # 잘게 쪼개진 조각(예: 꼬리 끝)은 가까운 큰 조각과 합친다: 가장 큰 n 개를 기준으로 나머지를 병합
+        segments.sort()
+        while len(segments) > n:
+            # 가장 짧은 조각을 인접한 조각과 합친다
+            i = min(range(len(segments)), key=lambda k: segments[k][1] - segments[k][0])
+            if i == 0:
+                j = 1
+            elif i == len(segments) - 1:
+                j = i - 1
+            else:
+                j = i - 1 if (segments[i][0] - segments[i - 1][1]) <= (segments[i + 1][0] - segments[i][1]) else i + 1
+            a, b = sorted([i, j])
+            segments[a] = (segments[a][0], segments[b][1])
+            del segments[b]
+    if len(segments) != n:
+        print(f"  ! 스트립 조각 {len(segments)}개 ≠ {n} → 균등 분할로 대체")
+        cw = w // n
+        segments = [(k * cw, (k + 1) * cw) for k in range(n)]
+    frames = []
+    for (a, b) in segments:
+        frames.append(img.crop((a, 0, b, h)))
+    return frames
+
+
+def postprocess_frames(asset: Asset, raw: Image.Image) -> list[Image.Image]:
+    """스트립 → 프레임 목록(각각 목표 크기, 같은 스케일, 하단 정렬)."""
+    img = raw
+    if has_real_alpha(img):
+        img = img.convert("RGBA")
+    else:
+        bg = detect_background(img)
+        if bg is None:
+            raise RuntimeError("스트립 배경을 검출하지 못함")
+        key, spread = bg
+        soft_in = max(30.0, spread * 1.8)
+        img = chroma_key(img, key=key, soft_in=soft_in, soft_out=soft_in + 35.0)
+    img = clear_border(img, max(4, int(min(img.size) * 0.012)))
+    pieces = [autocrop(p) for p in split_strip(img, asset.frames)]
+    # 모든 프레임에 같은 배율을 쓰도록 가장 큰 프레임 기준으로 스케일을 정한다(프레임 사이 크기 튐 방지)
+    tw, th = asset.size
+    scale = min(tw / max(p.width for p in pieces), th / max(p.height for p in pieces))
+    out = []
+    for p in pieces:
+        nw, nh = max(1, round(p.width * scale)), max(1, round(p.height * scale))
+        r = p.resize((nw, nh), Image.LANCZOS)
+        canvas = Image.new("RGBA", (tw, th), (0, 0, 0, 0))
+        canvas.paste(r, ((tw - nw) // 2, th - nh), r)
+        out.append(canvas)
+    return out
+
+
 def postprocess(asset: Asset, raw: Image.Image) -> Image.Image:
     img = raw
     if asset.transparent:
@@ -362,7 +481,11 @@ def build_prompt(asset: Asset, has_reference: bool) -> str:
         parts.append(CHROMA_HINT)
     if asset.seamless:
         parts.append(SEAMLESS_HINT)
-    parts.append("Subject: " + asset.prompt)
+    if asset.frames > 0:
+        parts.append(STRIP_HINT.format(n=asset.frames, steps=asset.prompt))
+        parts.append("Subject of every frame: " + asset.prompt.split(";")[0])
+    else:
+        parts.append("Subject: " + asset.prompt)
     return "\n".join(parts)
 
 
@@ -457,6 +580,18 @@ class QuotaError(Exception):
 def report(assets: list[Asset]) -> None:
     rows = []
     for a in assets:
+        if a.frames > 0:
+            existing = [p for p in a.outputs() if p.exists()]
+            if not existing:
+                rows.append((a.name, "missing", f"({a.size[0]}x{a.size[1]})x{a.frames}", "-", "single-image fallback"))
+                continue
+            ok = len(existing) == a.frames
+            modes = set()
+            for p in existing:
+                with Image.open(p) as im:
+                    modes.add(im.mode)
+            rows.append((a.name, "OK" if ok and modes == {"RGBA"} else "CHECK", f"{a.size[0]}x{a.size[1]}x{len(existing)}", "/".join(sorted(modes)), f"{len(existing)}/{a.frames} frames"))
+            continue
         if a.path.exists():
             try:
                 with Image.open(a.path) as im:
@@ -557,6 +692,18 @@ def selftest() -> int:
     check("prompt has style prefix + reference hint", STYLE_PREFIX[:10] in p and "reference image" in p)
     pc = build_prompt(next(x for x in ASSETS if x.transparent and x.seamless), False)
     check("prompt has chroma + seamless hints", "#FF00FF" in pc and "tileable" in pc)
+    # 스트립 분할: 3개 블록 + 작은 파편 하나
+    strip = Image.new("RGBA", (300, 60), (0, 0, 0, 0))
+    ds = ImageDraw.Draw(strip)
+    for x0 in (10, 110, 210):
+        ds.rectangle((x0, 10, x0 + 60, 50), fill=(140, 90, 50, 255))
+    ds.rectangle((74, 30, 80, 34), fill=(140, 90, 50, 255))   # 꼬리 파편(합쳐져야 함)
+    pieces = split_strip(strip, 3)
+    check("split_strip: 3 pieces", len(pieces) == 3)
+    check("split_strip: widths plausible", all(50 <= p.width <= 90 for p in pieces))
+    fake = Asset("t", "", (40, 60), transparent=True, frames=3)
+    frs = postprocess_frames(fake, strip.convert("RGB").copy() if False else strip)
+    check("postprocess_frames: 3 frames of target size", len(frs) == 3 and all(f.size == (40, 60) for f in frs))
     print(f"\nselftest: {failures} failure(s)")
     return 1 if failures else 0
 
@@ -600,6 +747,11 @@ def main() -> int:
             try:
                 with Image.open(raw_path) as raw:
                     raw.load()
+                    if asset.frames > 0:
+                        for i, fr in enumerate(postprocess_frames(asset, raw)):
+                            fr.save(asset.frame_path(i), "PNG", optimize=True)
+                        print(f"* {asset.name}: 재처리 → {asset.frames} frames")
+                        continue
                     out = postprocess(asset, raw)
                 out.save(asset.path, "PNG", optimize=True)
                 print(f"* {asset.name}: 재처리 → {out.width}x{out.height}")
@@ -623,7 +775,7 @@ def main() -> int:
     client = None if args.dry_run else GeminiImageClient(api_key, args.model)
     results: dict[str, str] = {}
     for asset in assets:
-        if asset.path.exists() and not args.force:
+        if all(p.exists() for p in asset.outputs()) and not args.force:
             results[asset.name] = "skip (exists)"
             print(f"- {asset.name}: 이미 있음, 건너뜀 (--force 로 재생성)")
             continue
@@ -650,10 +802,17 @@ def main() -> int:
                 raw_dir = ART_DIR / "_raw"
                 raw_dir.mkdir(exist_ok=True)
                 raw.save(raw_dir / f"{asset.name}.png")
-            out = postprocess(asset, raw)
-            out.save(asset.path, "PNG", optimize=True)
-            results[asset.name] = f"ok ({model}, raw {raw.width}x{raw.height})"
-            print(f"  -> {asset.path.relative_to(ROOT)} {out.width}x{out.height} via {model}")
+            if asset.frames > 0:
+                frames_out = postprocess_frames(asset, raw)
+                for i, fr in enumerate(frames_out):
+                    fr.save(asset.frame_path(i), "PNG", optimize=True)
+                results[asset.name] = f"ok ({model}, {len(frames_out)} frames, raw {raw.width}x{raw.height})"
+                print(f"  -> {asset.frame_path(0).relative_to(ROOT)} .. _{len(frames_out) - 1} via {model}")
+            else:
+                out = postprocess(asset, raw)
+                out.save(asset.path, "PNG", optimize=True)
+                results[asset.name] = f"ok ({model}, raw {raw.width}x{raw.height})"
+                print(f"  -> {asset.path.relative_to(ROOT)} {out.width}x{out.height} via {model}")
         except QuotaError as e:
             # 할당량 문제는 항목을 바꿔도 똑같이 실패하므로 나머지는 건너뛴다(API 를 헛되이 두드리지 않음)
             results[asset.name] = f"FAILED: {str(e)[:160]}"
