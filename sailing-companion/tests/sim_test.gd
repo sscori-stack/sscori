@@ -15,6 +15,8 @@ func _ready() -> void:
 	_test_serialization()
 	_test_wind_clamp_and_gust()
 	_test_all_legs_complete()
+	_test_wind_service_parser()
+	_test_voyage_persistence()
 	print("\n==== %d checks, %d failed ====" % [_count, _fails])
 	get_tree().quit(1 if _fails > 0 else 0)
 
@@ -165,3 +167,37 @@ func _test_all_legs_complete() -> void:
 					all_ok = false
 					worst = "leg %d rev=%s wind=%.0f progress=%.2f" % [i, rev, wd, sim.progress()]
 	_check("all legs complete in every wind", all_ok, worst)
+
+
+func _test_wind_service_parser() -> void:
+	var WindServiceScript := load("res://scripts/autoload/wind_service.gd")
+	var sample := '{"latitude":43.7,"longitude":7.4,"current":{"time":"2026-09-15T12:00","wind_speed_10m":11.3,"wind_direction_10m":212,"wind_gusts_10m":17.9}}'
+	var parsed: Dictionary = WindServiceScript.parse_response(sample.to_utf8_buffer())
+	_check("parser: dir", is_equal_approx(parsed.get("dir", -1.0), 212.0))
+	_check("parser: speed", is_equal_approx(parsed.get("speed", -1.0), 11.3))
+	_check("parser: gust", is_equal_approx(parsed.get("gust", -1.0), 17.9))
+	_check("parser: garbage → empty", WindServiceScript.parse_response("not json".to_utf8_buffer()).is_empty())
+	_check("parser: missing current → empty", WindServiceScript.parse_response('{"a":1}'.to_utf8_buffer()).is_empty())
+	_check("parser: null values → empty", WindServiceScript.parse_response('{"current":{"wind_speed_10m":null,"wind_direction_10m":null}}'.to_utf8_buffer()).is_empty())
+	var url: String = WindServiceScript.build_url(43.734, 7.424)
+	_check("url has coords and units", "latitude=43.734" in url and "wind_speed_unit=kn" in url)
+
+
+func _test_voyage_persistence() -> void:
+	var voyage := get_node_or_null("/root/Voyage")
+	if voyage == null:
+		_check("voyage autoload present", false)
+		return
+	voyage.start_leg(1, true)
+	for i in 200:
+		voyage.sim.step(0.5)
+	voyage.save_state()
+	var before: Dictionary = voyage.sim.to_dict()
+	voyage.sim.start_leg(0, false)   # 메모리만 바꾼다(voyage.start_leg 은 저장까지 하므로 쓰지 않음)
+	_check("persistence: file exists", FileAccess.file_exists(voyage.SAVE_PATH))
+	_check("persistence: load ok", voyage.load_state())
+	var after: Dictionary = voyage.sim.to_dict()
+	_check("persistence: leg restored", after["leg_index"] == 1 and after["leg_reversed"] == true)
+	_check("persistence: position restored", is_equal_approx(after["lat"], before["lat"]) and is_equal_approx(after["lon"], before["lon"]))
+	voyage.reset_voyage()
+	_check("persistence: reset → default leg", voyage.sim.leg_index == Marinas.DEFAULT_LEG and not voyage.sim.leg_reversed)

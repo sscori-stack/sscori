@@ -29,7 +29,7 @@ func _refresh_minimum_sizes() -> void:
 
 
 func _on_settings_pressed() -> void:
-	_settings_popup.popup_centered(Vector2i(220, 170))
+	_settings_popup.popup_centered(Vector2i(220, 200))
 
 
 func _on_share_pressed() -> void:

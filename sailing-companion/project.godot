@@ -22,6 +22,7 @@ config/icon="res://icon.svg"
 Settings="*res://scripts/autoload/settings.gd"
 AudioManager="*res://scripts/autoload/audio_manager.gd"
 Voyage="*res://scripts/autoload/voyage.gd"
+WindService="*res://scripts/autoload/wind_service.gd"
 
 [display]
 

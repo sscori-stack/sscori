@@ -3,12 +3,12 @@
 [ext_resource type="Script" path="res://scripts/ui/settings_popup.gd" id="1_popup"]
 
 [node name="SettingsPopup" type="PopupPanel"]
-size = Vector2i(220, 170)
+size = Vector2i(220, 200)
 script = ExtResource("1_popup")
 
 [node name="VBox" type="VBoxContainer" parent="."]
 offset_right = 212.0
-offset_bottom = 162.0
+offset_bottom = 192.0
 theme_override_constants/separation = 6
 
 [node name="AmbientLabel" type="Label" parent="VBox"]
@@ -40,6 +40,12 @@ unique_name_in_owner = true
 layout_mode = 2
 button_pressed = true
 text = "BGM on"
+
+[node name="WindOnlineCheck" type="CheckButton" parent="VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+button_pressed = true
+text = "Online wind"
 
 [node name="QuitButton" type="Button" parent="VBox"]
 unique_name_in_owner = true
