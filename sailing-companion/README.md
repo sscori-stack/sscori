@@ -3,7 +3,7 @@
 바탕화면 한구석에 띄워두는 방치형 힐링 세일링 컴패니언. 고양이 선장과 해달이 **실제 지중해 마리나 사이를 실제 바람을 타고** 항해합니다.
 오토파일럿의 실체는 고양이 선장입니다. 선장이 헬름과 윈치를 느긋하게 오가며 휠을 돌리고 줄을 당겨야 배가 움직입니다.
 
-- 엔진: **Godot 4.3** (GL Compatibility 렌더러), GDScript
+- 엔진: **Godot 4.3 이상** (4.3 / 4.7 에서 검증, GL Compatibility 렌더러), GDScript
 - 창: 450×280, 보더리스, 항상 위, 크기 고정, 첫 실행 시 주 모니터 우측 하단(16px 여백)
 - 저장: `user://settings.cfg`(창 위치·볼륨·설정), `user://voyage.cfg`(항해 진행 상태, 30초마다)
   (Windows: `%APPDATA%\Godot\app_userdata\Sailing Companion\`)
@@ -36,6 +36,14 @@
 
 Windows 방화벽이 최초 네트워크 접근을 물어볼 수 있습니다. 거부해도 계절풍 폴백으로 동작합니다.
 
+## 움직임(생동감) 구성
+
+- **바다**: 격자 메시(Polygon2D)에 파도 정점 변위 + 텍스처가 관찰자 쪽으로 흐름(선속 비례). 노을 반사 길에는 물비늘이 반짝이며 다가온다.
+- **돛**: 격자 메시가 바람 세기·트림에 따라 부풀고, 트림 불량·거스트에는 펄럭인다. 각도→폭, 펼침→높이, 붐 방향 좌우 반전.
+- **배**: 상하 4.5px·롤 2.2°·피칭 합성 + 시뮬레이션 힐. 선체 옆 물살 거품, 휠 미세 흔들림.
+- **하늘**: 별 반짝임, 달 광채 맥동, 구름 2겹 스크롤(풍속·풍향 반영), 등대 4초 점멸.
+- **캐릭터**: 호흡 + 느린 좌우 흔들림, 해달 위 "z" 떠오름. `captain_<pose>_<n>.png` / `otter_<n>.png` 프레임이 있으면 프레임 애니메이션(idle 2fps, walk 6fps 등).
+
 ## 에셋 자동 생성 (Gemini 이미지 생성)
 
 `scripts/generate_assets.py` 가 아래 표의 항목을 순회하며 Gemini(Nano Banana)로 그림을 만들어 `assets/art/` 에 저장합니다.
@@ -56,6 +64,7 @@ python3 scripts/generate_assets.py --selftest   # 후처리(크로마키·심리
 - 결과는 각 항목의 목표 크기(창 2배 해상도)로 잘라 맞추므로 `main.tscn` 배치를 바꾸지 않아도 됩니다.
 - 키가 없거나 호출이 전부 실패해도 파일을 만들지 않으므로 게임은 플레이스홀더로 정상 실행됩니다.
 - **주의**: Gemini 이미지 모델은 무료 등급에서 할당량이 0 일 수 있습니다(`429 ... limit: 0`). 이 경우 Google AI Studio 에서 결제가 활성화된 프로젝트의 키가 필요합니다. 스크립트는 이를 감지하면 남은 항목을 건너뜁니다.
+- **프레임 스트립**: `captain_idle_anim`(3), `captain_walk_anim`(4), `captain_pull_anim`(3), `captain_steer_anim`(2), `captain_pet_anim`(2), `captain_stretch_anim`(3), `otter_anim`(3) 항목은 프레임 N개를 한 장(가로 스트립)으로 생성한 뒤 투명 열을 기준으로 분할해 `<접두사>_<n>.png` 로 저장합니다. 없으면 단일 이미지로 동작합니다.
 - 생성 후 Godot 에디터를 열면 자동 임포트됩니다(에디터 없이: `godot --headless --path sailing-companion --import`).
 
 ## 에셋 교체 (코드 수정 없음)
@@ -75,6 +84,7 @@ python3 scripts/generate_assets.py --selftest   # 후처리(크로마키·심리
 | `otter.png` | 잠든 해달 | 하단 중앙 (호흡 피벗) |
 | `captain.png` | 앉아서 바다를 보는 고양이 선장(기본/idle) | 하단 중앙 (호흡 피벗) |
 | `captain_walk.png`, `captain_pull.png`, `captain_steer.png`, `captain_pet.png`, `captain_stretch.png` | 포즈별(선택). 없으면 idle 을 그대로 씀 | 하단 중앙 |
+| `captain_<pose>_<n>.png`, `otter_<n>.png` | 포즈별 프레임(선택, n=0..). 2장 이상 있으면 프레임 애니메이션 | 하단 중앙 |
 | `wheel.png` | 조타 휠(정중앙이 회전축) | 중앙 |
 | `windex.png` | 마스트 꼭대기 풍향 화살표(위쪽이 화살촉) | 중앙 |
 | `cockpit.png` | 하단 난간/콕핏 프레임 | 하단 중앙 |
