@@ -33,6 +33,11 @@ var _app_focused := true
 var _mouse_inside := false
 
 
+func _enter_tree() -> void:
+	# 자식 UI 의 _ready 보다 먼저 실행되어야 폰트 유무를 UI 가 알 수 있다.
+	UiTheme.apply(get_window())
+
+
 func _ready() -> void:
 	instance = self
 	OS.low_processor_usage_mode = true

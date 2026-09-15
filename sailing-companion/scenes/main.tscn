@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=18 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/layers/placeholder_sprite.gd" id="2_placeholder"]
@@ -9,6 +9,21 @@
 [ext_resource type="Script" path="res://scripts/boat/sail.gd" id="7_sail"]
 [ext_resource type="Script" path="res://scripts/boat/breather.gd" id="8_breather"]
 [ext_resource type="Script" path="res://scripts/boat/wheel.gd" id="9_wheel"]
+[ext_resource type="Script" path="res://scripts/ui/ui_bar.gd" id="10_ui_bar"]
+[ext_resource type="Script" path="res://scripts/ui/icon_button.gd" id="11_icon_button"]
+[ext_resource type="Script" path="res://scripts/ui/analog_clock.gd" id="12_clock"]
+[ext_resource type="Script" path="res://scripts/ui/pomodoro.gd" id="13_pomodoro"]
+[ext_resource type="Script" path="res://scripts/ui/music_widget.gd" id="14_music"]
+[ext_resource type="PackedScene" path="res://scenes/ui/settings_popup.tscn" id="15_popup"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar"]
+content_margin_left = 8.0
+content_margin_top = 4.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+bg_color = Color(0.36, 0.22, 0.12, 0.93)
+border_width_top = 2
+border_color = Color(0.6, 0.4, 0.22, 1)
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_wheel"]
 radius = 32.0
@@ -134,3 +149,79 @@ texture_path = "res://assets/art/cockpit.png"
 placeholder_size = Vector2i(450, 36)
 placeholder_color = Color(0.42, 0.26, 0.14, 1)
 pivot_normalized = Vector2(0.5, 1)
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="UIBar" type="PanelContainer" parent="UI"]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -40.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_bar")
+script = ExtResource("10_ui_bar")
+
+[node name="HBox" type="HBoxContainer" parent="UI/UIBar"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="SettingsButton" type="Button" parent="UI/UIBar/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+script = ExtResource("11_icon_button")
+kind = 0
+texture_path = "res://assets/art/ui_btn_settings.png"
+
+[node name="ShareButton" type="Button" parent="UI/UIBar/HBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+script = ExtResource("11_icon_button")
+kind = 1
+texture_path = "res://assets/art/ui_btn_share.png"
+
+[node name="Clock" type="Control" parent="UI/UIBar/HBox"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+script = ExtResource("12_clock")
+
+[node name="SpacerLeft" type="Control" parent="UI/UIBar/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Pomodoro" type="Button" parent="UI/UIBar/HBox"]
+custom_minimum_size = Vector2(96, 30)
+layout_mode = 2
+text = "Pomodoro
+25:00"
+script = ExtResource("13_pomodoro")
+
+[node name="SpacerRight" type="Control" parent="UI/UIBar/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="MusicWidget" type="HBoxContainer" parent="UI/UIBar/HBox"]
+unique_name_in_owner = true
+layout_mode = 2
+script = ExtResource("14_music")
+
+[node name="TrackLabel" type="Label" parent="UI/UIBar/HBox/MusicWidget"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = "Lo-Fi radio
+Calm Waves"
+
+[node name="ToggleButton" type="Button" parent="UI/UIBar/HBox/MusicWidget"]
+custom_minimum_size = Vector2(26, 30)
+layout_mode = 2
+script = ExtResource("11_icon_button")
+kind = 2
+
+[node name="SettingsPopup" parent="UI/UIBar" instance=ExtResource("15_popup")]
+unique_name_in_owner = true
