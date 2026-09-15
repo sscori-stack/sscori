@@ -24,7 +24,7 @@ func _process(_delta: float) -> void:
 		_check("AudioManager bus Ambient", AudioServer.get_bus_index("Ambient") != -1)
 		_check("AudioManager bus Music", AudioServer.get_bus_index("Music") != -1)
 		var sky := _main.get_node("Sky")
-		_check("Sky placeholder texture", sky.texture != null and sky.texture.get_size() == Vector2(450, 280))
+		_check("Sky texture covers the window", sky.texture != null and (sky.texture.get_size() * sky.scale).is_equal_approx(Vector2(450, 280)))
 		var cap := _main.get_node("Boat/Captain")
 		_check("Captain placeholder", cap.texture != null)
 		_check("Clouds region", _main.get_node("CloudsFar").region_enabled)
@@ -158,7 +158,8 @@ func _process(_delta: float) -> void:
 		print("  sail scale=%s heel_visual=%.2f hud compass size=%s" % [sail.scale, _main.get_node("Boat").heel_visual, _main.get_node("UI/Hud/CompassStrip").size])
 		print("  ", voyage0.summary_text().replace("\n", " | "))
 		_check("Autopilot active", _main.autopilot_active)
-		_check("Horizon zooming", _main.get_node("Horizon").scale.x > 1.0)
+		var horizon := _main.get_node("Horizon")
+		_check("Horizon zooming", horizon.scale.x > horizon._base_scale.x)
 		print("  fps cap=", Engine.max_fps, " low_proc=", OS.low_processor_usage_mode)
 
 

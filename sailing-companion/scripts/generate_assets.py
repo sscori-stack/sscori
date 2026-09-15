@@ -29,7 +29,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 try:
-    from PIL import Image, ImageChops
+    from PIL import Image, ImageChops, ImageFilter
 except ImportError:  # pragma: no cover
     print("Pillow 가 필요합니다: pip install pillow", file=sys.stderr)
     raise
@@ -86,6 +86,7 @@ class Asset:
     aspect: str = "1:1"            # 생성 시 요청할 비율
     anchor: str = "bottom"         # 크기 맞출 때 정렬: bottom / center / cover
     use_captain_ref: bool = False  # captain.png 를 캐릭터 참조로 첨부
+    no_style_ref: bool = False     # 색감 앵커(sky.png)를 첨부하지 않음(하늘을 따라 그리면 안 되는 항목)
     extra_refs: list[str] = field(default_factory=list)
 
     @property
@@ -107,8 +108,9 @@ ASSETS: list[Asset] = [
     Asset("sea", "Calm open sea surface at sunset viewed from a boat, gentle rolling waves, blue-violet water with warm orange and pink sunset reflections "
           "as a shimmering path, small highlights. No boat, no sky, no land: only water filling the whole frame.",
           (1200, 280), transparent=False, seamless=True, aspect="16:9", anchor="cover"),
-    Asset("sail", "A single white mainsail full of wind on a wooden mast, seen from behind and slightly to the side, the boom pointing to the right, "
-          "cream-white canvas with soft shading, a few rope details. The mast base is at the bottom center. Only the sail and mast.",
+    Asset("sail", "ONLY a single white mainsail full of wind and its wooden mast, nothing else: NO hull, NO boat body, NO deck, NO water. "
+          "Seen from behind and slightly to the side, the boom pointing to the right, cream-white canvas with soft shading, a few rope details. "
+          "The mast is a straight vertical pole ending at the bottom center of the image where it would meet the deck (do not draw the deck).",
           (260, 280), transparent=True, aspect="1:1", anchor="bottom"),
     Asset("deck", "The wooden deck of a small classic sailboat seen from behind at cockpit level: warm honey-brown planks, a coiled rope, a brass compass "
           "in a small wooden box, cleats. A wide low shape. Only the deck and its props, no sea, no sky, no people.",
@@ -125,8 +127,9 @@ ASSETS: list[Asset] = [
     Asset("captain_pull", "The SAME tabby cat captain (same hat, sweater, neckerchief), standing and gently pulling a rope with both paws, "
           "leaning back a little, calm focused expression. Full body, feet at the bottom. Only the cat and the rope in its paws.",
           (88, 156), transparent=True, aspect="3:4", anchor="bottom", use_captain_ref=True),
-    Asset("captain_steer", "The SAME tabby cat captain (same hat, sweater, neckerchief), sitting and holding a wooden ship's wheel spoke with one paw, "
-          "seen from behind and slightly to the side, relaxed. Full body, feet at the bottom. Only the cat (do not draw the wheel itself).",
+    Asset("captain_steer", "The SAME tabby cat captain (same hat, sweater, neckerchief), sitting on a small wooden bench seen from behind and slightly "
+          "to the side, one paw raised to the side at shoulder height as if resting on an invisible ship's wheel, relaxed. "
+          "ABSOLUTELY NO wheel, NO helm, NO steering object in the image: only the cat and the small bench. Full body, feet at the bottom.",
           (88, 156), transparent=True, aspect="3:4", anchor="bottom", use_captain_ref=True),
     Asset("captain_pet", "The SAME tabby cat captain (same hat, sweater, neckerchief), crouching down and gently patting something small in front of it "
           "with a soft smile, seen from the side. Full body, feet at the bottom. Only the cat.", (88, 156), transparent=True, aspect="3:4", anchor="bottom", use_captain_ref=True),
@@ -138,9 +141,10 @@ ASSETS: list[Asset] = [
           "Vertical orientation, arrow tip at the top. Only the vane.", (24, 48), transparent=True, aspect="1:1", anchor="center"),
     Asset("cockpit", "The lower wooden cockpit coaming and railing of a small sailboat seen from behind, a wide horizontal frame of warm dark wood "
           "with brass fittings, slightly curved top edge. Only the wooden frame strip.", (900, 72), transparent=True, aspect="21:9", anchor="bottom"),
-    Asset("chart_bg", "An old nautical chart background: aged parchment paper texture in warm cream and tan, faint compass rose in a corner, "
-          "faint latitude/longitude grid lines, soft watercolor stains, no land shapes, no text. Opaque full-frame.",
-          (400, 260), transparent=False, aspect="3:2", anchor="cover"),
+    Asset("chart_bg", "A flat top-down texture of old parchment paper for a nautical chart: aged cream and tan paper with fibers, "
+          "faint sepia latitude/longitude grid lines, a small faded sepia compass rose in one corner, subtle tea stains. "
+          "It is PAPER, not a landscape: NO sky, NO clouds, NO sun, NO sea, NO land, NO text. Opaque full-frame texture.",
+          (400, 260), transparent=False, aspect="3:2", anchor="cover", no_style_ref=True),
     Asset("ui_btn_settings", "A round wooden button icon with a brass gear symbol in the middle, hand-painted look. Only the button.",
           (60, 60), transparent=True, aspect="1:1", anchor="center"),
     Asset("ui_btn_share", "A round wooden button icon with a brass diagonal arrow (share/open link) symbol in the middle, hand-painted look. Only the button.",
@@ -153,43 +157,60 @@ ASSETS: list[Asset] = [
 # ============================================================ 후처리
 
 def detect_background(img: Image.Image) -> tuple[tuple[int, int, int], float] | None:
-    """가장자리 픽셀로 배경색(중앙값)과 흩어짐(평균 거리)을 추정. 균일하지 않으면 None."""
+    """배경색 추정: 이미지 전체에서 가장 많은 색 구간(굵은 히스토그램 최빈값)을 배경으로 본다.
+    피사체가 가장자리에 걸쳐 있어도(구름 띠 등) 동작한다. 최빈 색이 전체의 20% 미만이면 None."""
     rgb = img.convert("RGB")
-    w, h = rgb.size
-    px = rgb.load()
-    samples = []
-    step = max(1, min(w, h) // 64)
-    for x in range(0, w, step):
-        for y in (0, 1, 2, h - 3, h - 2, h - 1):
-            samples.append(px[x, y])
-    for y in range(0, h, step):
-        for x in (0, 1, 2, w - 3, w - 2, w - 1):
-            samples.append(px[x, y])
-    if not samples:
+    small = rgb.resize((max(1, rgb.width // 4), max(1, rgb.height // 4)))
+    px = list(small.get_flattened_data()) if hasattr(small, "get_flattened_data") else list(small.getdata())
+    bins: dict[tuple[int, int, int], int] = {}
+    for r, g, b in px:
+        k = (r >> 4, g >> 4, b >> 4)
+        bins[k] = bins.get(k, 0) + 1
+    mode_bin, count = max(bins.items(), key=lambda kv: kv[1])
+    if count < len(px) * 0.2:
         return None
-    med = tuple(int(sorted(c[i] for c in samples)[len(samples) // 2]) for i in range(3))
-    dists = [((r - med[0]) ** 2 + (g - med[1]) ** 2 + (b - med[2]) ** 2) ** 0.5 for r, g, b in samples]
-    dists.sort()
-    spread = dists[int(len(dists) * 0.9)]   # 90% 분위: 가장자리에 피사체가 조금 걸려도 견딤
-    if spread > 90.0:
+    center = tuple(c * 16 + 8 for c in mode_bin)
+    near = [p for p in px if ((p[0] - center[0]) ** 2 + (p[1] - center[1]) ** 2 + (p[2] - center[2]) ** 2) ** 0.5 <= 40.0]
+    if not near:
         return None
-    return med, spread
+    key = tuple(int(sorted(c[i] for c in near)[len(near) // 2]) for i in range(3))
+    dists = sorted(((r - key[0]) ** 2 + (g - key[1]) ** 2 + (b - key[2]) ** 2) ** 0.5 for r, g, b in near)
+    spread = dists[int(len(dists) * 0.9)]
+    return key, spread
 
 
-def chroma_key(img: Image.Image, key=KEY_COLOR, soft_in: float = 70.0, soft_out: float = 150.0) -> Image.Image:
-    """단색(key) 배경을 알파로. 색 거리 soft_in 이하 → 투명, soft_out 이상 → 불투명, 사이는 선형."""
+def _chroma_vec(r: int, g: int, b: int) -> tuple[float, float, float] | None:
+    s = r + g + b
+    if s < 30:
+        return None   # 거의 검정: 색조를 정할 수 없음 → 피사체로 취급
+    return (r / s, g / s, b / s)
+
+
+def chroma_key(img: Image.Image, key=KEY_COLOR, soft_in: float = 70.0, soft_out: float = 150.0,
+               hue_in: float = 12.0, hue_out: float = 30.0) -> Image.Image:
+    """단색(key) 배경을 알파로.
+    RGB 거리(soft_in..soft_out)와 색조 거리(정규화 RGB, hue_in..hue_out)를 각각 알파로 바꾼 뒤 작은 쪽을 쓴다.
+    → 같은 색조의 명도 변화(비네트, 수채 얼룩)는 배경으로 빠지고, 다른 색조의 피사체는 남는다."""
     rgba = img.convert("RGBA")
     px = rgba.load()
     w, h = rgba.size
     kr, kg, kb = key
+    kc = _chroma_vec(kr, kg, kb) or (1 / 3, 1 / 3, 1 / 3)
     for y in range(h):
         for x in range(w):
             r, g, b, a = px[x, y]
             d = ((r - kr) ** 2 + (g - kg) ** 2 + (b - kb) ** 2) ** 0.5
-            if d <= soft_in:
+            t_rgb = min(1.0, max(0.0, (d - soft_in) / (soft_out - soft_in)))
+            c = _chroma_vec(r, g, b)
+            if c is None:
+                t_hue = 1.0
+            else:
+                dh = 255.0 * ((c[0] - kc[0]) ** 2 + (c[1] - kc[1]) ** 2 + (c[2] - kc[2]) ** 2) ** 0.5
+                t_hue = min(1.0, max(0.0, (dh - hue_in) / (hue_out - hue_in)))
+            t = min(t_rgb, t_hue)
+            if t <= 0.0:
                 px[x, y] = (r, g, b, 0)
-            elif d < soft_out:
-                t = (d - soft_in) / (soft_out - soft_in)
+            elif t < 1.0:
                 # 디스필: 반투명 가장자리에서 배경색이 섞인 만큼 빼 준다(선형 언믹스)
                 if t > 0.0:
                     r = max(0, min(255, int((r - kr * (1.0 - t)) / t)))
@@ -243,12 +264,38 @@ def make_seamless_x(img: Image.Image, blend_frac: float = 0.25) -> Image.Image:
     return out
 
 
-def autocrop(img: Image.Image, threshold: int = 12) -> Image.Image:
+def clear_border(img: Image.Image, edge_px: int) -> Image.Image:
+    """생성 이미지 가장자리의 테두리 선·얼룩(모델 아티팩트)을 투명 처리한다."""
+    if img.mode != "RGBA" or edge_px <= 0:
+        return img
+    w, h = img.size
+    alpha = img.getchannel("A")
+    mask = Image.new("L", (w, h), 0)
+    mask.paste(255, (edge_px, edge_px, w - edge_px, h - edge_px))
+    alpha = ImageChops.multiply(alpha, mask)
+    out = img.copy()
+    out.putalpha(alpha)
+    return out
+
+
+def autocrop(img: Image.Image, threshold: int = 128, margin: int = 3, despeckle: int = 5) -> Image.Image:
+    """확실히 불투명한(alpha > threshold) 영역의 바운딩 박스로 자른다.
+    despeckle 크기의 최소값 필터로 작은 점(먼지·모서리 얼룩)을 지운 마스크로 박스를 잡아 잡티가 박스를 키우지 않게 한다."""
     if img.mode != "RGBA":
         return img
     alpha = img.getchannel("A").point(lambda v: 255 if v > threshold else 0)
-    bbox = alpha.getbbox()
-    return img.crop(bbox) if bbox else img
+    if despeckle > 1:
+        eroded = alpha.filter(ImageFilter.MinFilter(despeckle))
+        bbox = eroded.getbbox()
+        margin += despeckle // 2
+    else:
+        bbox = alpha.getbbox()
+    if not bbox:
+        bbox = alpha.getbbox()
+        if not bbox:
+            return img
+    l, t, r, b = bbox
+    return img.crop((max(0, l - margin), max(0, t - margin), min(img.width, r + margin), min(img.height, b + margin)))
 
 
 def fit_to(img: Image.Image, size: tuple[int, int], anchor: str) -> Image.Image:
@@ -279,12 +326,14 @@ def postprocess(asset: Asset, raw: Image.Image) -> Image.Image:
             bg = detect_background(img)
             if bg is not None:
                 key, spread = bg
-                soft_in = max(45.0, spread * 1.8)
-                print(f"  bg={key} spread={spread:.0f} → chroma key (soft {soft_in:.0f}..{soft_in + 70:.0f})")
-                img = chroma_key(img, key=key, soft_in=soft_in, soft_out=soft_in + 70.0)
+                soft_in = max(30.0, spread * 1.8)
+                print(f"  bg={key} spread={spread:.0f} → chroma key (rgb {soft_in:.0f}..{soft_in + 35:.0f}, hue 12..30)")
+                img = chroma_key(img, key=key, soft_in=soft_in, soft_out=soft_in + 35.0)
             else:
                 print(f"  ! {asset.name}: 투명 배경도 단색 배경도 아님 → 그대로 사용(수동 확인 필요)")
                 img = img.convert("RGBA")
+        # 모델이 그리는 얇은 테두리/모서리 얼룩 제거(짧은 변의 1.2%, 최소 4px)
+        img = clear_border(img, max(4, int(min(img.size) * 0.012)))
         if asset.seamless:
             img = fit_to(img, asset.size, "cover")
             img = make_seamless_x(img)
@@ -462,10 +511,27 @@ def selftest() -> int:
     check("chroma: corner transparent", keyed.getpixel((1, 1))[3] == 0)
     check("chroma: center opaque", keyed.getpixel((60, 50))[3] == 255)
     cropped = autocrop(keyed)
-    check("autocrop: ~61x61", abs(cropped.width - 61) <= 2 and abs(cropped.height - 61) <= 2)
+    check("autocrop: ~71x71 (61 + margin)", abs(cropped.width - 71) <= 4 and abs(cropped.height - 71) <= 4)
+    # 가장자리 테두리 선은 지워져야 한다
+    framed = Image.new("RGBA", (200, 100), (140, 90, 50, 255))
+    cleared = clear_border(framed, 6)
+    check("clear_border: edge transparent, inside opaque", cleared.getpixel((2, 50))[3] == 0 and cleared.getpixel((100, 50))[3] == 255)
+    # 잡티 하나가 박스를 키우면 안 된다
+    speck = img.copy()
+    speck.putpixel((2, 2), (0, 0, 0))
+    cropped2 = autocrop(chroma_key(speck))
+    check("autocrop: ignores a stray speck", abs(cropped2.width - 71) <= 4 and abs(cropped2.height - 71) <= 4)
+    # 같은 색조의 어두운 비네트는 배경으로 빠져야 한다
+    vig = Image.new("RGB", (120, 100), KEY_COLOR)
+    dv = ImageDraw.Draw(vig)
+    dv.rectangle((0, 0, 30, 100), fill=(150, 0, 150))   # 왼쪽 어두운 마젠타 띠
+    dv.ellipse((50, 20, 110, 80), fill=(140, 90, 50))
+    kv = chroma_key(vig)
+    check("chroma: same-hue dark vignette transparent", kv.getpixel((10, 50))[3] == 0)
+    check("chroma: subject still opaque", kv.getpixel((80, 50))[3] == 255)
     fitted = fit_to(cropped, (88, 156), "bottom")
     check("fit bottom: size", fitted.size == (88, 156))
-    check("fit bottom: bottom row has content", any(fitted.getpixel((x, 155))[3] > 0 for x in range(88)))
+    check("fit bottom: content near bottom row", any(fitted.getpixel((x, y))[3] > 0 for x in range(88) for y in range(150, 156)))
     check("fit bottom: top row empty", all(fitted.getpixel((x, 0))[3] == 0 for x in range(88)))
     # 진짜 알파가 있으면 크로마키를 건너뛰는지
     rgba = Image.new("RGBA", (10, 10), (0, 0, 0, 0))
@@ -505,6 +571,7 @@ def main() -> int:
     ap.add_argument("--model", help="모델 이름 강제 (기본: gemini-2.5-flash-image 부터 순서대로 시도)")
     ap.add_argument("--keep-raw", action="store_true", help="후처리 전 원본을 assets/art/_raw/ 에 보관")
     ap.add_argument("--sleep", type=float, default=2.0, help="호출 사이 대기(초)")
+    ap.add_argument("--reprocess", action="store_true", help="API 호출 없이 assets/art/_raw/ 의 원본으로 후처리만 다시 수행")
     args = ap.parse_args()
 
     if args.selftest:
@@ -520,6 +587,24 @@ def main() -> int:
         assets = [a for a in ASSETS if a.name in wanted]
 
     if args.report:
+        report(assets)
+        return 0
+
+    if args.reprocess:
+        raw_dir = ART_DIR / "_raw"
+        for asset in assets:
+            raw_path = raw_dir / f"{asset.name}.png"
+            if not raw_path.exists():
+                print(f"- {asset.name}: 원본 없음, 건너뜀")
+                continue
+            try:
+                with Image.open(raw_path) as raw:
+                    raw.load()
+                    out = postprocess(asset, raw)
+                out.save(asset.path, "PNG", optimize=True)
+                print(f"* {asset.name}: 재처리 → {out.width}x{out.height}")
+            except Exception as e:  # noqa: BLE001
+                print(f"  !! {asset.name} 재처리 실패: {str(e)[:200]}")
         report(assets)
         return 0
 
@@ -545,7 +630,7 @@ def main() -> int:
         refs: list[Path] = []
         if has_reference:
             refs.append(REFERENCE)
-        elif asset.name != "sky" and (ART_DIR / "sky.png").exists():
+        elif asset.name != "sky" and not asset.no_style_ref and (ART_DIR / "sky.png").exists():
             refs.append(ART_DIR / "sky.png")
         if asset.use_captain_ref and (ART_DIR / "captain.png").exists():
             refs.append(ART_DIR / "captain.png")
