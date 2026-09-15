@@ -36,6 +36,28 @@
 
 Windows 방화벽이 최초 네트워크 접근을 물어볼 수 있습니다. 거부해도 계절풍 폴백으로 동작합니다.
 
+## 에셋 자동 생성 (Gemini 이미지 생성)
+
+`scripts/generate_assets.py` 가 아래 표의 항목을 순회하며 Gemini(Nano Banana)로 그림을 만들어 `assets/art/` 에 저장합니다.
+
+```
+pip install pillow requests
+export GEMINI_API_KEY=...                       # Windows PowerShell: $env:GEMINI_API_KEY="..."
+python3 scripts/generate_assets.py              # 없는 파일만 생성
+python3 scripts/generate_assets.py --force --only captain,otter   # 지정 항목 재생성
+python3 scripts/generate_assets.py --dry-run    # 프롬프트만 확인
+python3 scripts/generate_assets.py --report     # 생성된 파일 크기/알파 검사 표
+python3 scripts/generate_assets.py --selftest   # 후처리(크로마키·심리스·크기 맞춤) 자가 테스트
+```
+
+- 스타일 고정 문구(지브리풍 수채화, 노을 톤)를 모든 프롬프트 앞에 붙이고, `reference/image_0.png` 가 있으면 화풍 참조로 함께 보냅니다(없으면 먼저 만든 `sky.png` 를 색감 앵커로 사용).
+- 투명이 필요한 항목은 마젠타(#FF00FF) 단색 배경으로 요청한 뒤 Pillow 크로마키로 알파를 만듭니다(모델이 진짜 알파를 주면 그대로 사용). 포즈 변형(`captain_*`)은 생성된 `captain.png` 를 캐릭터 참조로 첨부합니다.
+- `sea`, `clouds_*` 는 심리스 요청 + 좌우 가장자리 롤-블렌딩 후처리로 타일링을 보장합니다.
+- 결과는 각 항목의 목표 크기(창 2배 해상도)로 잘라 맞추므로 `main.tscn` 배치를 바꾸지 않아도 됩니다.
+- 키가 없거나 호출이 전부 실패해도 파일을 만들지 않으므로 게임은 플레이스홀더로 정상 실행됩니다.
+- **주의**: Gemini 이미지 모델은 무료 등급에서 할당량이 0 일 수 있습니다(`429 ... limit: 0`). 이 경우 Google AI Studio 에서 결제가 활성화된 프로젝트의 키가 필요합니다. 스크립트는 이를 감지하면 남은 항목을 건너뜁니다.
+- 생성 후 Godot 에디터를 열면 자동 임포트됩니다(에디터 없이: `godot --headless --path sailing-companion --import`).
+
 ## 에셋 교체 (코드 수정 없음)
 
 `assets/art/` 에 아래 이름의 **투명 배경 PNG**(창 2배 해상도, 900×560 캔버스 기준)를 넣으면 다음 실행부터 자동 교체됩니다.
