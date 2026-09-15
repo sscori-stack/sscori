@@ -89,7 +89,7 @@ position = Vector2(225, 280)
 script = ExtResource("6_boat")
 
 [node name="Sail" type="Sprite2D" parent="Boat"]
-position = Vector2(55, -90)
+position = Vector2(55, -100)
 script = ExtResource("7_sail")
 texture_path = "res://assets/art/sail.png"
 placeholder_size = Vector2i(130, 140)
@@ -101,38 +101,38 @@ position = Vector2(55, -236)
 script = ExtResource("16_windex")
 
 [node name="Telltale" type="Line2D" parent="Boat"]
-position = Vector2(88, -150)
+position = Vector2(88, -160)
 script = ExtResource("17_telltale")
 
 [node name="Deck" type="Sprite2D" parent="Boat"]
-position = Vector2(0, -5)
+position = Vector2(0, -34)
 script = ExtResource("2_placeholder")
 texture_path = "res://assets/art/deck.png"
 placeholder_size = Vector2i(340, 70)
-placeholder_color = Color(0.55, 0.36, 0.2, 1)
+placeholder_color = Color(0.62, 0.42, 0.24, 1)
 pivot_normalized = Vector2(0.5, 1)
 
 [node name="Otter" type="Sprite2D" parent="Boat"]
-position = Vector2(150, -20)
+position = Vector2(150, -56)
 script = ExtResource("8_breather")
 breath_period = 5.0
 phase_offset = 1.7
 texture_path = "res://assets/art/otter.png"
 placeholder_size = Vector2i(60, 34)
-placeholder_color = Color(0.85, 0.72, 0.55, 1)
+placeholder_color = Color(0.78, 0.6, 0.42, 1)
 pivot_normalized = Vector2(0.5, 1)
 
 [node name="Captain" type="Sprite2D" parent="Boat"]
-position = Vector2(95, -28)
+position = Vector2(95, -60)
 script = ExtResource("8_breather")
 breath_period = 4.2
 texture_path = "res://assets/art/captain.png"
 placeholder_size = Vector2i(44, 78)
-placeholder_color = Color(0.6, 0.42, 0.25, 1)
+placeholder_color = Color(0.9, 0.6, 0.3, 1)
 pivot_normalized = Vector2(0.5, 1)
 
 [node name="Wheel" type="Node2D" parent="Boat" groups=["wheel"]]
-position = Vector2(70, -62)
+position = Vector2(70, -92)
 script = ExtResource("9_wheel")
 hit_radius = 32.0
 
@@ -152,6 +152,7 @@ placeholder_color = Color(0.8, 0.62, 0.4, 1)
 pivot_normalized = Vector2(0.5, 0.5)
 
 [node name="Cockpit" type="Sprite2D" parent="Boat"]
+position = Vector2(0, -36)
 script = ExtResource("2_placeholder")
 texture_path = "res://assets/art/cockpit.png"
 placeholder_size = Vector2i(450, 36)
