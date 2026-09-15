@@ -23,6 +23,7 @@ var idle_seconds: float = 0.0
 ## 입력 없이 AUTOPILOT_IDLE_SECONDS 이상 지나면 true.
 var autopilot_active: bool = false
 
+var _boat: Boat
 var _wheel_heading: float = 0.0
 var _wheel_dragging: bool = false
 
@@ -37,6 +38,7 @@ func _ready() -> void:
 	OS.low_processor_usage_mode = true
 	_setup_window()
 	_update_fps()
+	_boat = get_tree().get_first_node_in_group("boat") as Boat
 	for wheel in get_tree().get_nodes_in_group("wheel"):
 		wheel.heading_changed.connect(_on_wheel_heading_changed.bind(wheel))
 
@@ -120,6 +122,8 @@ func _process(delta: float) -> void:
 		heading = lerpf(heading, 0.0, minf(1.0, delta * AUTOPILOT_RETURN_RATE))
 	else:
 		heading = _wheel_heading
+	if _boat != null:
+		AudioManager.set_wave_phase(_boat.bob_normalized)
 
 
 func _on_wheel_heading_changed(value: float, wheel: Node) -> void:
