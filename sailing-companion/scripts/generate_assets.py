@@ -60,8 +60,9 @@ STYLE_PREFIX = (
 )
 CHROMA_HINT = (
     "IMPORTANT: draw ONLY the requested subject, fully isolated, centered, nothing cut off, "
-    "on a completely flat, uniform, pure magenta background (#FF00FF). "
-    "No shadow, no gradient, no vignette, no ground plane on the background. "
+    "on a completely flat, uniform, saturated pure magenta background (#FF00FF, like a green-screen). "
+    "The background must be EMPTY: no horizon line, no sea, no water, no sky, no floor, no shadow, no gradient, "
+    "no vignette, no texture, no extra props. Every background pixel must be the same magenta. "
     "Ideally output a PNG with a transparent alpha channel; if not possible, keep the magenta perfectly flat."
 )
 SEAMLESS_HINT = (
@@ -151,6 +152,30 @@ ASSETS: list[Asset] = [
 
 # ============================================================ 후처리
 
+def detect_background(img: Image.Image) -> tuple[tuple[int, int, int], float] | None:
+    """가장자리 픽셀로 배경색(중앙값)과 흩어짐(평균 거리)을 추정. 균일하지 않으면 None."""
+    rgb = img.convert("RGB")
+    w, h = rgb.size
+    px = rgb.load()
+    samples = []
+    step = max(1, min(w, h) // 64)
+    for x in range(0, w, step):
+        for y in (0, 1, 2, h - 3, h - 2, h - 1):
+            samples.append(px[x, y])
+    for y in range(0, h, step):
+        for x in (0, 1, 2, w - 3, w - 2, w - 1):
+            samples.append(px[x, y])
+    if not samples:
+        return None
+    med = tuple(int(sorted(c[i] for c in samples)[len(samples) // 2]) for i in range(3))
+    dists = [((r - med[0]) ** 2 + (g - med[1]) ** 2 + (b - med[2]) ** 2) ** 0.5 for r, g, b in samples]
+    dists.sort()
+    spread = dists[int(len(dists) * 0.9)]   # 90% 분위: 가장자리에 피사체가 조금 걸려도 견딤
+    if spread > 90.0:
+        return None
+    return med, spread
+
+
 def chroma_key(img: Image.Image, key=KEY_COLOR, soft_in: float = 70.0, soft_out: float = 150.0) -> Image.Image:
     """단색(key) 배경을 알파로. 색 거리 soft_in 이하 → 투명, soft_out 이상 → 불투명, 사이는 선형."""
     rgba = img.convert("RGBA")
@@ -165,10 +190,11 @@ def chroma_key(img: Image.Image, key=KEY_COLOR, soft_in: float = 70.0, soft_out:
                 px[x, y] = (r, g, b, 0)
             elif d < soft_out:
                 t = (d - soft_in) / (soft_out - soft_in)
-                # 디스필: 반투명 가장자리의 마젠타 물빠짐 완화
-                if r > g and b > g:
-                    m = int(g + (max(r, b) - g) * 0.4)
-                    r, b = min(r, m), min(b, m)
+                # 디스필: 반투명 가장자리에서 배경색이 섞인 만큼 빼 준다(선형 언믹스)
+                if t > 0.0:
+                    r = max(0, min(255, int((r - kr * (1.0 - t)) / t)))
+                    g = max(0, min(255, int((g - kg * (1.0 - t)) / t)))
+                    b = max(0, min(255, int((b - kb * (1.0 - t)) / t)))
                 px[x, y] = (r, g, b, int(a * t))
     return rgba
 
@@ -249,11 +275,16 @@ def postprocess(asset: Asset, raw: Image.Image) -> Image.Image:
     if asset.transparent:
         if has_real_alpha(img):
             img = img.convert("RGBA")
-        elif looks_like_key_background(img):
-            img = chroma_key(img)
         else:
-            print(f"  ! {asset.name}: 투명 배경도 마젠타 배경도 아님 → 그대로 사용(수동 확인 필요)")
-            img = img.convert("RGBA")
+            bg = detect_background(img)
+            if bg is not None:
+                key, spread = bg
+                soft_in = max(45.0, spread * 1.8)
+                print(f"  bg={key} spread={spread:.0f} → chroma key (soft {soft_in:.0f}..{soft_in + 70:.0f})")
+                img = chroma_key(img, key=key, soft_in=soft_in, soft_out=soft_in + 70.0)
+            else:
+                print(f"  ! {asset.name}: 투명 배경도 단색 배경도 아님 → 그대로 사용(수동 확인 필요)")
+                img = img.convert("RGBA")
         if asset.seamless:
             img = fit_to(img, asset.size, "cover")
             img = make_seamless_x(img)
@@ -419,7 +450,14 @@ def selftest() -> int:
     from PIL import ImageDraw
     d = ImageDraw.Draw(img)
     d.ellipse((30, 20, 90, 80), fill=(140, 90, 50))
-    check("looks_like_key_background", looks_like_key_background(img))
+    bg = detect_background(img)
+    check("detect_background finds magenta", bg is not None and bg[0] == KEY_COLOR)
+    pinkish = Image.new("RGB", (120, 100), (233, 130, 190))
+    ImageDraw.Draw(pinkish).ellipse((30, 20, 90, 80), fill=(140, 90, 50))
+    bgp = detect_background(pinkish)
+    check("detect_background finds pinkish", bgp is not None and bgp[0] == (233, 130, 190))
+    keyed_p = chroma_key(pinkish, key=bgp[0], soft_in=45, soft_out=115)
+    check("chroma pinkish: corner transparent, center opaque", keyed_p.getpixel((1, 1))[3] == 0 and keyed_p.getpixel((60, 50))[3] == 255)
     keyed = chroma_key(img)
     check("chroma: corner transparent", keyed.getpixel((1, 1))[3] == 0)
     check("chroma: center opaque", keyed.getpixel((60, 50))[3] == 255)

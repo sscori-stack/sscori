@@ -3,3 +3,5 @@
 # Local build output
 build/
 *.tmp
+# 생성 스크립트의 후처리 전 원본
+assets/art/_raw/
