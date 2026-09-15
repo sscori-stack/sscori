@@ -1,4 +1,4 @@
-[gd_scene load_steps=34 format=3]
+[gd_scene load_steps=38 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/layers/placeholder_sprite.gd" id="2_placeholder"]
@@ -31,6 +31,10 @@
 [ext_resource type="Script" path="res://scripts/boat/zzz.gd" id="30_zzz"]
 [ext_resource type="Script" path="res://scripts/boat/otter.gd" id="31_otter"]
 [ext_resource type="Script" path="res://scripts/layers/world_view.gd" id="32_world"]
+[ext_resource type="Script" path="res://scripts/scene3d/scene3d_root.gd" id="33_scene3d"]
+[ext_resource type="Script" path="res://scripts/scene3d/view3d.gd" id="34_view3d"]
+[ext_resource type="Script" path="res://scripts/boat/captain_anchor.gd" id="35_anchor"]
+[ext_resource type="Script" path="res://scripts/boat/sail_input.gd" id="36_sail_input"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar"]
 content_margin_left = 8.0
@@ -113,17 +117,8 @@ placeholder_size = Vector2i(450, 280)
 placeholder_color = Color(0.55, 0.36, 0.2, 0)
 pivot_normalized = Vector2(0, 0)
 
-[node name="Sail" type="Polygon2D" parent="Boat"]
-position = Vector2(181, 154)
-script = ExtResource("25_sail_mesh")
-layer_key = "sail"
-mast_at_right = true
-texture_path = "res://assets/art/scene/sail.png"
-placeholder_size = Vector2i(160, 240)
-placeholder_color = Color(0.97, 0.95, 0.9, 1)
-pivot_normalized = Vector2(1, 1)
-belly_px = 18.0
-flutter_px = 6.0
+[node name="SailInput" type="Node2D" parent="Boat"]
+script = ExtResource("36_sail_input")
 
 [node name="Wheel" type="Node2D" parent="Boat" groups=["wheel"]]
 position = Vector2(206, 207)
@@ -131,25 +126,13 @@ script = ExtResource("9_wheel")
 layer_key = "wheel"
 hit_radius = 40.0
 
-[node name="WheelSprite" type="Sprite2D" parent="Boat/Wheel"]
-script = ExtResource("2_placeholder")
-layer_key = "wheel"
-layout_sets_position = false
-texture_path = "res://assets/art/scene/wheel.png"
-placeholder_size = Vector2i(80, 80)
-placeholder_color = Color(0.33, 0.2, 0.1, 1)
-placeholder_shape = 1
-pivot_normalized = Vector2(0.5, 0.5)
-
-[node name="Captain" type="Sprite2D" parent="Boat"]
+[node name="Captain" type="Node2D" parent="Boat"]
 position = Vector2(327, 296)
-script = ExtResource("21_captain")
-layer_key = "captain"
-sway_deg = 0.6
-texture_path = "res://assets/art/scene/captain.png"
-placeholder_size = Vector2i(80, 140)
-placeholder_color = Color(0.9, 0.6, 0.3, 1)
-pivot_normalized = Vector2(0.5, 1)
+script = ExtResource("35_anchor")
+
+[node name="View3D" type="Sprite2D" parent="Boat"]
+script = ExtResource("34_view3d")
+viewport_path = NodePath("../../Scene3D")
 
 [node name="Crew" type="Node" parent="Boat"]
 script = ExtResource("22_crew")
@@ -159,6 +142,11 @@ wheel_path = NodePath("../Wheel")
 helm_spot = Vector2(327, 296)
 winch_spot = Vector2(190, 218)
 otter_spot = Vector2(327, 296)
+
+[node name="Scene3D" type="SubViewport" parent="."]
+transparent_bg = true
+size = Vector2i(900, 560)
+script = ExtResource("33_scene3d")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
