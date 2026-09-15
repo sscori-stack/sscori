@@ -1,9 +1,13 @@
-extends Button
-## 뽀모도로 타이머. 클릭: 시작/일시정지, 길게 누름: 리셋, 종료 시 종소리 1회 + 잠깐 반짝임.
+extends VBoxContainer
+## 뽀모도로 타이머 위젯(제목 Label + 시간 Button).
+## 클릭: 시작/일시정지, 길게 누름: 리셋, 종료 시 종소리 1회 + 잠깐 반짝임.
 
 @export var duration_minutes: int = 25
 @export var long_press_seconds: float = 0.7
 @export var flash_color: Color = Color(1.0, 0.95, 0.6)
+
+@onready var _title: Label = $Title
+@onready var _button: Button = $TimeButton
 
 var _remaining: float = 0.0
 var _running: bool = false
@@ -14,10 +18,11 @@ var _flash_tween: Tween
 
 
 func _ready() -> void:
-	focus_mode = Control.FOCUS_NONE
-	toggle_mode = false
-	button_down.connect(_on_button_down)
-	button_up.connect(_on_button_up)
+	_title.text = "뽀모도로" if UiTheme.korean_font_available else "Pomodoro"
+	_button.focus_mode = Control.FOCUS_NONE
+	_button.toggle_mode = false
+	_button.button_down.connect(_on_button_down)
+	_button.button_up.connect(_on_button_up)
 	_reset()
 
 
@@ -31,6 +36,14 @@ func _process(delta: float) -> void:
 		if _remaining <= 0.0:
 			_finish()
 	_update_text()
+
+
+func is_running() -> bool:
+	return _running
+
+
+func remaining_seconds() -> float:
+	return _remaining
 
 
 func _on_button_down() -> void:
@@ -76,7 +89,6 @@ func _update_text() -> void:
 	if seconds == _shown_seconds:
 		return
 	_shown_seconds = seconds
-	var title := "뽀모도로" if UiTheme.korean_font_available else "Pomodoro"
-	text = "%s\n%02d:%02d" % [title, seconds / 60, seconds % 60]
+	_button.text = "%02d:%02d" % [seconds / 60, seconds % 60]
 	# 일시정지/대기 상태는 살짝 어둡게 표시
-	self_modulate = Color.WHITE if _running else Color(0.85, 0.85, 0.85)
+	_button.self_modulate = Color.WHITE if _running else Color(0.85, 0.85, 0.85)

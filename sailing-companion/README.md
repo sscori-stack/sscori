@@ -58,6 +58,14 @@
 godot --headless --path sailing-companion --export-release "Windows Desktop" build/SailingCompanion.exe
 ```
 
+## 헤드리스 스모크 테스트
+
+에디터 없이 핵심 동작(흔들림·호흡·조타·창 드래그 저장·뽀모도로·설정·오토파일럿)을 검사합니다.
+
+```
+godot --headless --path sailing-companion res://tests/smoke_test.tscn
+```
+
 ## 구조
 
 ```

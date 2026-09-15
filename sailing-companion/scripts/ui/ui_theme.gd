@@ -15,7 +15,8 @@ const COLOR_WOOD_EDGE := Color(0.72, 0.52, 0.3)
 static var korean_font_available: bool = false
 
 
-static func apply(window: Window) -> void:
+## CanvasLayer 아래의 Control 은 Window 테마를 상속하지 않으므로, UI 루트 Control 에 직접 적용한다.
+static func apply(ui_root: Control) -> void:
 	var theme := Theme.new()
 	var font := _find_font()
 	if font != null:
@@ -23,9 +24,10 @@ static func apply(window: Window) -> void:
 		korean_font_available = true
 	theme.default_font_size = 12
 
-	theme.set_stylebox("normal", "Button", _wood_box(COLOR_WOOD))
-	theme.set_stylebox("hover", "Button", _wood_box(COLOR_WOOD_LIGHT))
-	theme.set_stylebox("pressed", "Button", _wood_box(COLOR_WOOD_DARK))
+	theme.set_stylebox("normal", "Button", _wood_box(COLOR_WOOD, 6.0, 2.0))
+	theme.set_stylebox("hover", "Button", _wood_box(COLOR_WOOD_LIGHT, 6.0, 2.0))
+	theme.set_stylebox("pressed", "Button", _wood_box(COLOR_WOOD_DARK, 6.0, 2.0))
+	theme.set_stylebox("disabled", "Button", _wood_box(COLOR_WOOD_DARK, 6.0, 2.0))
 	theme.set_stylebox("focus", "Button", StyleBoxEmpty.new())
 	for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
 		theme.set_color(state, "Button", COLOR_CREAM)
@@ -33,16 +35,19 @@ static func apply(window: Window) -> void:
 	theme.set_color("font_color", "CheckButton", COLOR_CREAM)
 	theme.set_stylebox("panel", "PopupPanel", _wood_box(COLOR_WOOD_DARK, 8.0))
 
-	window.theme = theme
+	ui_root.theme = theme
 
 
-static func _wood_box(color: Color, margin: float = 4.0) -> StyleBoxFlat:
+static func _wood_box(color: Color, margin_h: float = 4.0, margin_v: float = 4.0) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
 	box.bg_color = color
 	box.set_corner_radius_all(6)
 	box.set_border_width_all(1)
 	box.border_color = COLOR_WOOD_EDGE
-	box.set_content_margin_all(margin)
+	box.content_margin_left = margin_h
+	box.content_margin_right = margin_h
+	box.content_margin_top = margin_v
+	box.content_margin_bottom = margin_v
 	return box
 
 

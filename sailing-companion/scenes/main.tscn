@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/layers/placeholder_sprite.gd" id="2_placeholder"]
@@ -18,15 +18,12 @@
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar"]
 content_margin_left = 8.0
-content_margin_top = 4.0
+content_margin_top = 2.0
 content_margin_right = 8.0
-content_margin_bottom = 4.0
+content_margin_bottom = 2.0
 bg_color = Color(0.36, 0.22, 0.12, 0.93)
 border_width_top = 2
 border_color = Color(0.6, 0.4, 0.22, 1)
-
-[sub_resource type="CircleShape2D" id="CircleShape2D_wheel"]
-radius = 32.0
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -121,12 +118,10 @@ placeholder_size = Vector2i(44, 78)
 placeholder_color = Color(0.6, 0.42, 0.25, 1)
 pivot_normalized = Vector2(0.5, 1)
 
-[node name="Wheel" type="Area2D" parent="Boat" groups=["wheel"]]
+[node name="Wheel" type="Node2D" parent="Boat" groups=["wheel"]]
 position = Vector2(70, -62)
 script = ExtResource("9_wheel")
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Boat/Wheel"]
-shape = SubResource("CircleShape2D_wheel")
+hit_radius = 32.0
 
 [node name="WheelSprite" type="Sprite2D" parent="Boat/Wheel"]
 script = ExtResource("2_placeholder")
@@ -172,6 +167,7 @@ theme_override_constants/separation = 6
 unique_name_in_owner = true
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 2
+size_flags_vertical = 4
 script = ExtResource("11_icon_button")
 kind = 0
 texture_path = "res://assets/art/ui_btn_settings.png"
@@ -180,6 +176,7 @@ texture_path = "res://assets/art/ui_btn_settings.png"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 2
+size_flags_vertical = 4
 script = ExtResource("11_icon_button")
 kind = 1
 texture_path = "res://assets/art/ui_btn_share.png"
@@ -187,6 +184,7 @@ texture_path = "res://assets/art/ui_btn_share.png"
 [node name="Clock" type="Control" parent="UI/UIBar/HBox"]
 custom_minimum_size = Vector2(30, 30)
 layout_mode = 2
+size_flags_vertical = 4
 script = ExtResource("12_clock")
 
 [node name="SpacerLeft" type="Control" parent="UI/UIBar/HBox"]
@@ -194,12 +192,23 @@ layout_mode = 2
 size_flags_horizontal = 3
 mouse_filter = 2
 
-[node name="Pomodoro" type="Button" parent="UI/UIBar/HBox"]
-custom_minimum_size = Vector2(96, 30)
+[node name="Pomodoro" type="VBoxContainer" parent="UI/UIBar/HBox"]
 layout_mode = 2
-text = "Pomodoro
-25:00"
+size_flags_vertical = 4
+theme_override_constants/separation = 0
 script = ExtResource("13_pomodoro")
+
+[node name="Title" type="Label" parent="UI/UIBar/HBox/Pomodoro"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 9
+text = "Pomodoro"
+horizontal_alignment = 1
+
+[node name="TimeButton" type="Button" parent="UI/UIBar/HBox/Pomodoro"]
+custom_minimum_size = Vector2(72, 20)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "25:00"
 
 [node name="SpacerRight" type="Control" parent="UI/UIBar/HBox"]
 layout_mode = 2
@@ -213,13 +222,15 @@ script = ExtResource("14_music")
 
 [node name="TrackLabel" type="Label" parent="UI/UIBar/HBox/MusicWidget"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 10
+size_flags_vertical = 4
+theme_override_font_sizes/font_size = 9
 text = "Lo-Fi radio
 Calm Waves"
 
 [node name="ToggleButton" type="Button" parent="UI/UIBar/HBox/MusicWidget"]
 custom_minimum_size = Vector2(26, 30)
 layout_mode = 2
+size_flags_vertical = 4
 script = ExtResource("11_icon_button")
 kind = 2
 

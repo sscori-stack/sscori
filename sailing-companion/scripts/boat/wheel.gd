@@ -1,12 +1,15 @@
-extends Area2D
+extends Node2D
 ## 조타 휠. 휠 위에서 좌클릭 드래그하면 마우스 각도 변화만큼 회전(±max_angle_deg).
 ## 손을 떼면 return_time 에 걸쳐 0 으로 복귀. heading(-1~1)을 시그널로 알린다.
+## 물리 픽킹 대신 반경 검사로 클릭을 판정한다(물리 서버 불필요, 저사양에 유리).
 
 signal heading_changed(heading: float)
 
 @export var max_angle_deg: float = 90.0
 ## 복귀에 걸리는 대략적인 시간(초).
 @export var return_time: float = 2.5
+## 클릭 판정 반경(픽셀, 화면 기준).
+@export var hit_radius: float = 32.0
 
 var is_dragging: bool = false
 
@@ -17,12 +20,12 @@ var _last_emitted: float = INF
 
 func _ready() -> void:
 	add_to_group("wheel")
-	input_pickable = true
-	input_event.connect(_on_input_event)
 
 
-func _on_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+## 좌클릭 "누름"은 UI 가 소비하지 않은 경우에만 도착한다.
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed \
+			and _is_mouse_over():
 		is_dragging = true
 		_last_mouse_angle = _mouse_angle()
 		get_viewport().set_input_as_handled()
@@ -39,6 +42,10 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
 		is_dragging = false
+
+
+func _is_mouse_over() -> bool:
+	return (get_global_mouse_position() - global_position).length() <= hit_radius
 
 
 ## 전역 좌표 기준 각도. 차이만 쓰므로 배/휠의 회전과 무관하다.
