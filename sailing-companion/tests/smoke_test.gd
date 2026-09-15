@@ -23,11 +23,10 @@ func _process(_delta: float) -> void:
 		_check("Boat found", _main.get_node("Boat") != null)
 		_check("AudioManager bus Ambient", AudioServer.get_bus_index("Ambient") != -1)
 		_check("AudioManager bus Music", AudioServer.get_bus_index("Music") != -1)
-		var sky := _main.get_node("Sky")
+		var sky := _main.get_node("World/Sky")
 		_check("Sky texture covers the window", sky.texture != null and (sky.texture.get_size() * sky.scale).is_equal_approx(Vector2(450, 280)))
 		var cap := _main.get_node("Boat/Captain")
 		_check("Captain placeholder", cap.texture != null)
-		_check("Clouds region", _main.get_node("CloudsFar").region_enabled)
 		_check("Pomodoro text", "25:00" in _main.get_node("UI/UIBar/HBox/Pomodoro/TimeButton").text)
 		print("  Pomodoro text: ", _main.get_node("UI/UIBar/HBox/Pomodoro/Title").text, " ", _main.get_node("UI/UIBar/HBox/Pomodoro/TimeButton").text)
 		var bar: Control = _main.get_node("UI/UIBar")
@@ -54,8 +53,8 @@ func _process(_delta: float) -> void:
 		print("  wheel rot=%.3f heading=%.3f" % [wheel.rotation, _main.heading])
 		_check("Wheel rotated ≥60deg", rad_to_deg(wheel.rotation) >= 60.0)
 		_check("Heading ≥0.65", _main.heading >= 0.65)
-		var horizon := _main.get_node("Horizon")
-		_check("Horizon shifted", absf(horizon.position.x - 225.0) > 20.0)
+		var horizon := _main.get_node("World/Island")
+		_check("World shifted by heading", absf(_main.get_node("World").position.x) > 10.0)
 		_send_mouse_button(wheel.global_position + Vector2(0, 20), MOUSE_BUTTON_LEFT, false)
 	if _frames == 38:
 		_check("Wheel released", not _main.get_node("Boat/Wheel").is_dragging)
@@ -133,7 +132,7 @@ func _process(_delta: float) -> void:
 		voyage1.sim.sail_furl = 1.0
 		_main.get_node("Boat/Crew")._think_timer = 0.0
 		_main._player_helm_until = -1.0
-	if _frames == 900:
+	if _frames == 1200:
 		var voyage1 := get_node("/root/Voyage")
 		var crew := _main.get_node("Boat/Crew")
 		print("  moored: captain state=%s at=%s furl=%.2f" % [crew.state_name(), crew.at_spot, voyage1.sim.sail_furl])
@@ -150,15 +149,14 @@ func _process(_delta: float) -> void:
 		_check("Voyage sim running", voyage0.sim != null and voyage0.sim.sim_time_hours > 0.0)
 		_check("Voyage progress > 0", voyage0.sim.progress() > 0.0)
 		_check("Voyage label shows leg", "→" in _main.get_node("UI/Hud/VoyageLabel").text)
-		_check("Windex exists and rotates finitely", is_finite(_main.get_node("Boat/Windex").rotation))
-		_check("Telltale has points", _main.get_node("Boat/Telltale").points.size() >= 3)
+		_check("World tilts with roll", is_finite(_main.get_node("World").rotation))
 		_check("Wheel follows rudder target", is_finite(_main.get_node("Boat/Wheel").external_target))
 		var sail := _main.get_node("Boat/Sail")
 		_check("Sail scale finite and nonzero", is_finite(sail.scale.x) and sail.scale.x != 0.0 and sail.scale.y > 0.0)
 		print("  sail scale=%s heel_visual=%.2f hud compass size=%s" % [sail.scale, _main.get_node("Boat").heel_visual, _main.get_node("UI/Hud/CompassStrip").size])
 		print("  ", voyage0.summary_text().replace("\n", " | "))
 		_check("Autopilot active", _main.autopilot_active)
-		var horizon := _main.get_node("Horizon")
+		var horizon := _main.get_node("World/Island")
 		_check("Horizon zooming", horizon.scale.x > horizon._base_scale.x)
 		print("  fps cap=", Engine.max_fps, " low_proc=", OS.low_processor_usage_mode)
 

@@ -12,11 +12,16 @@ extends Polygon2D
 @export var pivot_normalized: Vector2 = Vector2(0.5, 1.0)
 @export var grid_x: int = 16
 @export var grid_y: int = 6
+## layout.json 의 레이어 키. 있으면 파일·위치·피벗을 레이아웃에서 가져온다.
+@export var layer_key: String = ""
 ## 변형 갱신 주기(초). 0 이면 매 프레임.
 @export var update_interval: float = 0.0
 
 var uses_real_texture: bool = false
+var uses_layout: bool = false
 var tex_size: Vector2 = Vector2.ONE
+## 격자 원점(텍스처 픽셀, 피벗 기준). 레이아웃이 있으면 bbox 원점 - 피벗.
+var grid_origin: Vector2 = Vector2.ZERO
 
 var _t: float = 0.0
 var _acc: float = 0.0
@@ -30,6 +35,18 @@ func _ready() -> void:
 
 func _setup_texture() -> void:
 	uses_real_texture = false
+	uses_layout = false
+	if layer_key != "" and SceneLayout.has_layer(layer_key):
+		var lp := SceneLayout.layer_texture_path(layer_key)
+		if ResourceLoader.exists(lp, "Texture2D"):
+			texture = load(lp)
+			uses_real_texture = true
+			uses_layout = true
+			tex_size = texture.get_size()
+			scale = Vector2.ONE * art_scale
+			grid_origin = SceneLayout.origin(layer_key) - SceneLayout.pivot(layer_key)
+			position = SceneLayout.to_screen(SceneLayout.pivot(layer_key))
+			return
 	if texture_path != "" and ResourceLoader.exists(texture_path, "Texture2D"):
 		var loaded := load(texture_path) as Texture2D
 		if loaded != null:
@@ -41,12 +58,13 @@ func _setup_texture() -> void:
 		texture = ImageTexture.create_from_image(img)
 	tex_size = texture.get_size()
 	scale = Vector2.ONE * (art_scale if uses_real_texture else 1.0)
+	grid_origin = -tex_size * pivot_normalized
 
 
 func _build_grid() -> void:
 	var verts := PackedVector2Array()
 	var uvs := PackedVector2Array()
-	var origin := -tex_size * pivot_normalized
+	var origin := grid_origin
 	for j in grid_y + 1:
 		for i in grid_x + 1:
 			var u := float(i) / grid_x

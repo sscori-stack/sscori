@@ -22,6 +22,8 @@ var wheel: Node2D
 @export var winch_spot: Vector2 = Vector2(18, -56)
 @export var otter_spot: Vector2 = Vector2(128, -58)
 @export var walk_speed: float = 22.0
+## 윈치 자리(멀리)에서의 원근 배율.
+@export var depth_scale_far: float = 0.72
 ## 돛 트림이 이만큼 어긋나야 움직인다(도 / 펼침 비율).
 @export var sail_deadband_deg: float = 10.0
 @export var furl_deadband: float = 0.1
@@ -68,6 +70,11 @@ func _ready() -> void:
 	otter = get_node_or_null(otter_path) as Node2D
 	wheel = get_node_or_null(wheel_path) as Node2D
 	if captain != null:
+		if SceneLayout.available() and "uses_layout" in captain and captain.uses_layout:
+			# 레이아웃 모드: 헬름 자리는 선장 레이어의 피벗, 윈치 자리는 layout.json 의 winch_spot
+			helm_spot = captain.position
+			winch_spot = SceneLayout.to_screen(SceneLayout.point("winch_spot", winch_spot * 2.0))
+			otter_spot = helm_spot
 		captain.position = helm_spot
 		_spot_offset = Vector2.ZERO
 
@@ -154,7 +161,7 @@ func _needs_trim() -> bool:
 
 
 func _start_vignette() -> void:
-	match _rng.randi_range(0, 2):
+	match _rng.randi_range(0 if otter != null else 1, 2):
 		0:
 			_walk_to("otter", otter_spot, func() -> void:
 				state = State.PETTING
@@ -224,6 +231,7 @@ func _act(delta: float) -> void:
 				captain.position += to_go.normalized() * step
 				# 느긋한 걸음: 살짝 위아래
 				captain.pose_scale = Vector2(1.0, 1.0 + 0.02 * absf(sin(_walk_t * 7.0)))
+			_update_depth()
 		State.PULLING:
 			_do_pull(delta)
 		State.PETTING, State.STRETCHING, State.GAZING:
@@ -288,6 +296,18 @@ func _apply_rudder(delta: float) -> void:
 		_sim.rudder = lerpf(_sim.rudder, target, minf(1.0, delta * 1.5))
 	else:
 		_sim.rudder = lerpf(_sim.rudder, 0.0, minf(1.0, delta / rudder_release_tau))
+
+
+## 원근: 헬름(가까움)→윈치(멀리) 사이 위치에 따라 축소하고, 윈치 쪽에 있으면 휠 뒤에 그린다.
+func _update_depth() -> void:
+	if "depth_scale" not in captain:
+		return
+	var span := helm_spot.y - winch_spot.y
+	var t := 0.0
+	if absf(span) > 1.0:
+		t = clampf((helm_spot.y - captain.position.y) / span, 0.0, 1.0)
+	captain.depth_scale = lerpf(1.0, depth_scale_far, t)
+	captain.z_index = -1 if t > 0.5 else 0
 
 
 static func _ease(x: float) -> float:

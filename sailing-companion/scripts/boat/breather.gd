@@ -15,6 +15,8 @@ var facing: float = 1.0
 var pose_scale: Vector2 = Vector2.ONE
 ## 포즈용 기울기(라디안). 컨트롤러가 바꾼다.
 var pose_skew: float = 0.0
+## 원근 배율(앞으로 걸어가면 작아짐). 컨트롤러가 바꾼다.
+var depth_scale: float = 1.0
 ## 느린 좌우 흔들림(도). 0 이면 없음.
 @export var sway_deg: float = 0.0
 @export var sway_period: float = 5.0
@@ -37,7 +39,7 @@ func _process(delta: float) -> void:
 		b = _ease_in_out(u / inhale_ratio)
 	else:
 		b = 1.0 - _ease_in_out((u - inhale_ratio) / (1.0 - inhale_ratio))
-	scale = _base_scale * Vector2(facing, 1.0 + breath_amount * b) * pose_scale
+	scale = _base_scale * Vector2(facing, 1.0 + breath_amount * b) * pose_scale * depth_scale
 	skew = pose_skew + deg_to_rad(sway_deg) * sin(TAU * _t / sway_period)
 
 

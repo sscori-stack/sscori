@@ -7,6 +7,8 @@ extends WarpSprite
 @export var shape_lerp_speed: float = 1.5
 @export var belly_px: float = 14.0
 @export var flutter_px: float = 5.0
+## 마스트(고정 변)가 텍스처의 오른쪽 가장자리인가(콕핏 뷰: 돛이 마스트 왼쪽으로 부풂).
+@export var mast_at_right: bool = false
 @export var drag_deg_per_px: float = 0.6
 @export var furl_step: float = 0.05
 
@@ -46,20 +48,22 @@ func _process(delta: float) -> void:
 	scale = _base_scale * Vector2(_vis_side * width, height)
 
 
-func displacement(u: float, v: float, t_now: float) -> Vector2:
+func displacement(u_in: float, v: float, t_now: float) -> Vector2:
 	# 마스트(u=0)와 아래 끝은 고정, 돛 가운데가 바람 쪽으로 부푼다. 펄럭임은 뒤쪽(u→1) 가장자리에서 크다.
+	var u := (1.0 - u_in) if mast_at_right else u_in
+	var sign := -1.0 if mast_at_right else 1.0
 	var edge := sin(u * PI) * (1.0 - v * 0.3)
 	var belly := belly_px * _vis_fill * edge * (1.0 + 0.08 * sin(t_now * 1.7))
 	var flutter := flutter_px * (0.15 + _vis_luff) * u * u * sin(t_now * 9.0 + v * 7.0)
 	var sway := 1.5 * sin(t_now * 0.9 + v * 2.0) * u
-	return Vector2(belly + flutter + sway, flutter * 0.3)
+	return Vector2((belly + flutter + sway) * sign, flutter * 0.3)
 
 
 # ---------------------------------------------------------------- 플레이어 조작
 
 func _is_mouse_over() -> bool:
 	var local := to_local(get_global_mouse_position())
-	return Rect2(-tex_size * pivot_normalized, tex_size).has_point(local)
+	return Rect2(grid_origin, tex_size).has_point(local)
 
 
 func _unhandled_input(event: InputEvent) -> void:

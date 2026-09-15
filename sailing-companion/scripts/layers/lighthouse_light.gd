@@ -8,6 +8,15 @@ extends Node2D
 var _t: float = 0.0
 
 
+func _ready() -> void:
+	# 부모(섬 레이어)가 레이아웃을 쓰면 등대 위치도 레이아웃에서(텍스처 픽셀, 부모 피벗 기준)
+	var parent := get_parent()
+	if parent != null and "layer_key" in parent and str(parent.layer_key) != "" and SceneLayout.has_layer(parent.layer_key):
+		var lh := SceneLayout.point("lighthouse", Vector2(-1, -1))
+		if lh.x >= 0.0:
+			position = lh - SceneLayout.pivot(parent.layer_key)
+
+
 func _process(delta: float) -> void:
 	_t += delta
 	queue_redraw()

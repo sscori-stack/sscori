@@ -1,4 +1,4 @@
-[gd_scene load_steps=33 format=3]
+[gd_scene load_steps=34 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="Script" path="res://scripts/layers/placeholder_sprite.gd" id="2_placeholder"]
@@ -30,6 +30,7 @@
 [ext_resource type="Script" path="res://scripts/boat/wake.gd" id="29_wake"]
 [ext_resource type="Script" path="res://scripts/boat/zzz.gd" id="30_zzz"]
 [ext_resource type="Script" path="res://scripts/boat/otter.gd" id="31_otter"]
+[ext_resource type="Script" path="res://scripts/layers/world_view.gd" id="32_world"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bar"]
 content_margin_left = 8.0
@@ -43,168 +44,121 @@ border_color = Color(0.6, 0.4, 0.22, 1)
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
 
-[node name="Sky" type="Sprite2D" parent="."]
+[node name="World" type="Node2D" parent="."]
+script = ExtResource("32_world")
+boat_path = NodePath("../Boat")
+parallax_px = 40.0
+
+[node name="Sky" type="Sprite2D" parent="World"]
 script = ExtResource("2_placeholder")
-texture_path = "res://assets/art/sky.png"
+layer_key = "backplate"
+texture_path = "res://assets/art/scene/backplate.png"
 placeholder_size = Vector2i(450, 280)
 placeholder_color = Color(0.56, 0.46, 0.76, 1)
 placeholder_color2 = Color(0.99, 0.66, 0.44, 1)
 pivot_normalized = Vector2(0, 0)
 
-[node name="SkyFx" type="Node2D" parent="."]
+[node name="SkyFx" type="Node2D" parent="World"]
 script = ExtResource("26_sky_fx")
+star_region = Rect2(300, 6, 140, 70)
+moon_pos = Vector2(372, 30)
+moon_radius = 11.0
 
-[node name="CloudsFar" type="Sprite2D" parent="."]
-position = Vector2(0, 28)
-script = ExtResource("3_scroll")
-scroll_speed = 7.0
-parallax_px = 12.0
-texture_path = "res://assets/art/clouds_far.png"
-placeholder_size = Vector2i(450, 60)
-placeholder_color = Color(1, 1, 1, 0.35)
-placeholder_shape = 2
-pivot_normalized = Vector2(0, 0)
-
-[node name="CloudsNear" type="Sprite2D" parent="."]
-position = Vector2(0, 68)
-script = ExtResource("3_scroll")
-scroll_speed = 13.0
-parallax_px = 22.0
-texture_path = "res://assets/art/clouds_near.png"
-placeholder_size = Vector2i(450, 70)
-placeholder_color = Color(1, 1, 1, 0.55)
-placeholder_shape = 2
-pivot_normalized = Vector2(0, 0)
-
-[node name="Horizon" type="Sprite2D" parent="."]
-position = Vector2(225, 152)
-script = ExtResource("4_horizon")
-parallax_px = 30.0
-texture_path = "res://assets/art/horizon.png"
-placeholder_size = Vector2i(470, 36)
-placeholder_color = Color(0.36, 0.25, 0.46, 1)
-pivot_normalized = Vector2(0.5, 1)
-
-[node name="LighthouseLight" type="Node2D" parent="Horizon"]
-position = Vector2(335, -69)
-script = ExtResource("27_lighthouse")
-
-[node name="Sea" type="Polygon2D" parent="."]
-position = Vector2(225, 150)
+[node name="Sea" type="Polygon2D" parent="World"]
+position = Vector2(0, 150)
 script = ExtResource("24_sea_mesh")
-boat_path = NodePath("../Boat")
-counter_amplitude = 1.5
-parallax_px = 60.0
-texture_path = "res://assets/art/sea.png"
-placeholder_size = Vector2i(600, 140)
+layer_key = "sea"
+boat_path = NodePath("../../Boat")
+counter_amplitude = 0.0
+parallax_px = 0.0
+texture_path = "res://assets/art/scene/sea.png"
+placeholder_size = Vector2i(450, 130)
 placeholder_color = Color(0.4, 0.42, 0.7, 1)
-pivot_normalized = Vector2(0.5, 0)
+pivot_normalized = Vector2(0, 0)
 grid_x = 24
 grid_y = 6
+wave_amplitude = 6.0
 
-[node name="SeaSparkle" type="Node2D" parent="."]
+[node name="SeaSparkle" type="Node2D" parent="World"]
 script = ExtResource("28_sparkle")
+top_y = 152.0
+bottom_y = 270.0
+center_x = 238.0
+top_half_width = 14.0
+bottom_half_width = 90.0
+
+[node name="Island" type="Sprite2D" parent="World"]
+position = Vector2(250, 150)
+script = ExtResource("4_horizon")
+layer_key = "island"
+parallax_px = 0.0
+texture_path = "res://assets/art/scene/island.png"
+placeholder_size = Vector2i(180, 20)
+placeholder_color = Color(0.36, 0.25, 0.46, 1)
+pivot_normalized = Vector2(0, 1)
+
+[node name="LighthouseLight" type="Node2D" parent="World/Island"]
+position = Vector2(300, -30)
+script = ExtResource("27_lighthouse")
 
 [node name="Boat" type="Node2D" parent="."]
-position = Vector2(225, 280)
 script = ExtResource("6_boat")
+cockpit_mode = true
 
-[node name="Wake" type="Node2D" parent="Boat"]
-position = Vector2(0, -28)
-script = ExtResource("29_wake")
+[node name="Hull" type="Sprite2D" parent="Boat"]
+script = ExtResource("2_placeholder")
+layer_key = "boat"
+texture_path = "res://assets/art/scene/boat.png"
+placeholder_size = Vector2i(450, 280)
+placeholder_color = Color(0.55, 0.36, 0.2, 0)
+pivot_normalized = Vector2(0, 0)
 
 [node name="Sail" type="Polygon2D" parent="Boat"]
-position = Vector2(55, -100)
+position = Vector2(181, 154)
 script = ExtResource("25_sail_mesh")
-texture_path = "res://assets/art/sail.png"
-placeholder_size = Vector2i(130, 140)
+layer_key = "sail"
+mast_at_right = true
+texture_path = "res://assets/art/scene/sail.png"
+placeholder_size = Vector2i(160, 240)
 placeholder_color = Color(0.97, 0.95, 0.9, 1)
-pivot_normalized = Vector2(0.5, 1)
-
-[node name="Windex" type="Node2D" parent="Boat"]
-position = Vector2(55, -236)
-script = ExtResource("16_windex")
-
-[node name="Telltale" type="Line2D" parent="Boat"]
-position = Vector2(88, -160)
-script = ExtResource("17_telltale")
-
-[node name="Deck" type="Sprite2D" parent="Boat"]
-position = Vector2(0, -34)
-script = ExtResource("2_placeholder")
-texture_path = "res://assets/art/deck.png"
-placeholder_size = Vector2i(340, 70)
-placeholder_color = Color(0.62, 0.42, 0.24, 1)
-pivot_normalized = Vector2(0.5, 1)
-
-[node name="Otter" type="Sprite2D" parent="Boat"]
-position = Vector2(150, -56)
-script = ExtResource("31_otter")
-breath_period = 5.0
-phase_offset = 1.7
-texture_path = "res://assets/art/otter.png"
-placeholder_size = Vector2i(60, 34)
-placeholder_color = Color(0.78, 0.6, 0.42, 1)
-pivot_normalized = Vector2(0.5, 1)
-
-[node name="Winch" type="Sprite2D" parent="Boat"]
-position = Vector2(18, -56)
-script = ExtResource("2_placeholder")
-texture_path = "res://assets/art/winch.png"
-placeholder_size = Vector2i(22, 14)
-placeholder_color = Color(0.35, 0.3, 0.28, 1)
-pivot_normalized = Vector2(0.5, 1)
-
-[node name="Zzz" type="Node2D" parent="Boat"]
-position = Vector2(162, -92)
-script = ExtResource("30_zzz")
-
-[node name="Captain" type="Sprite2D" parent="Boat"]
-position = Vector2(95, -60)
-script = ExtResource("21_captain")
-sway_deg = 0.8
-breath_period = 4.2
-texture_path = "res://assets/art/captain.png"
-placeholder_size = Vector2i(44, 78)
-placeholder_color = Color(0.9, 0.6, 0.3, 1)
-pivot_normalized = Vector2(0.5, 1)
+pivot_normalized = Vector2(1, 1)
+belly_px = 18.0
+flutter_px = 6.0
 
 [node name="Wheel" type="Node2D" parent="Boat" groups=["wheel"]]
-position = Vector2(70, -92)
+position = Vector2(206, 207)
 script = ExtResource("9_wheel")
-hit_radius = 32.0
+layer_key = "wheel"
+hit_radius = 40.0
 
 [node name="WheelSprite" type="Sprite2D" parent="Boat/Wheel"]
 script = ExtResource("2_placeholder")
-texture_path = "res://assets/art/wheel.png"
-placeholder_size = Vector2i(60, 60)
+layer_key = "wheel"
+layout_sets_position = false
+texture_path = "res://assets/art/scene/wheel.png"
+placeholder_size = Vector2i(80, 80)
 placeholder_color = Color(0.33, 0.2, 0.1, 1)
 placeholder_shape = 1
 pivot_normalized = Vector2(0.5, 0.5)
 
-[node name="WheelSpoke" type="Sprite2D" parent="Boat/Wheel"]
-position = Vector2(0, -22)
-script = ExtResource("2_placeholder")
-placeholder_size = Vector2i(6, 24)
-placeholder_color = Color(0.8, 0.62, 0.4, 1)
-pivot_normalized = Vector2(0.5, 0.5)
+[node name="Captain" type="Sprite2D" parent="Boat"]
+position = Vector2(327, 296)
+script = ExtResource("21_captain")
+layer_key = "captain"
+sway_deg = 0.6
+texture_path = "res://assets/art/scene/captain.png"
+placeholder_size = Vector2i(80, 140)
+placeholder_color = Color(0.9, 0.6, 0.3, 1)
+pivot_normalized = Vector2(0.5, 1)
 
 [node name="Crew" type="Node" parent="Boat"]
 script = ExtResource("22_crew")
 captain_path = NodePath("../Captain")
-otter_path = NodePath("../Otter")
+otter_path = NodePath("../NoOtter")
 wheel_path = NodePath("../Wheel")
-helm_spot = Vector2(95, -60)
-winch_spot = Vector2(18, -56)
-otter_spot = Vector2(128, -58)
-
-[node name="Cockpit" type="Sprite2D" parent="Boat"]
-position = Vector2(0, -36)
-script = ExtResource("2_placeholder")
-texture_path = "res://assets/art/cockpit.png"
-placeholder_size = Vector2i(450, 36)
-placeholder_color = Color(0.42, 0.26, 0.14, 1)
-pivot_normalized = Vector2(0.5, 1)
+helm_spot = Vector2(327, 296)
+winch_spot = Vector2(190, 218)
+otter_spot = Vector2(327, 296)
 
 [node name="UI" type="CanvasLayer" parent="."]
 

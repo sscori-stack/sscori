@@ -18,8 +18,13 @@ enum Shape { RECT, ELLIPSE, BLOBS }
 @export var placeholder_shape: Shape = Shape.RECT
 ## 기준점(0~1). (0.5, 1) = 하단 중앙. 노드 position 이 이 점에 놓인다.
 @export var pivot_normalized: Vector2 = Vector2(0.5, 0.5)
+## layout.json 의 레이어 키. 있으면 파일·위치·피벗을 레이아웃에서 가져온다(부모가 원점에 있어야 한다).
+@export var layer_key: String = ""
+## false 면 레이아웃의 위치는 쓰지 않고 텍스처·피벗 오프셋만 적용(부모 노드가 위치를 맡는 경우).
+@export var layout_sets_position: bool = true
 
 var uses_real_texture: bool = false
+var uses_layout: bool = false
 
 
 func _ready() -> void:
@@ -28,6 +33,19 @@ func _ready() -> void:
 
 func _setup_texture() -> void:
 	uses_real_texture = false
+	uses_layout = false
+	if layer_key != "" and SceneLayout.has_layer(layer_key):
+		var lp := SceneLayout.layer_texture_path(layer_key)
+		if ResourceLoader.exists(lp, "Texture2D"):
+			texture = load(lp)
+			uses_real_texture = true
+			uses_layout = true
+			scale = Vector2.ONE * art_scale
+			centered = false
+			offset = -(SceneLayout.pivot(layer_key) - SceneLayout.origin(layer_key))
+			if layout_sets_position:
+				position = SceneLayout.to_screen(SceneLayout.pivot(layer_key))
+			return
 	if texture_path != "" and ResourceLoader.exists(texture_path, "Texture2D"):
 		var loaded := load(texture_path) as Texture2D
 		if loaded != null:

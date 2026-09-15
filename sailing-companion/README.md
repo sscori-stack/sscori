@@ -44,7 +44,23 @@ Windows 방화벽이 최초 네트워크 접근을 물어볼 수 있습니다. �
 - **하늘**: 별 반짝임, 달 광채 맥동, 구름 2겹 스크롤(풍속·풍향 반영), 등대 4초 점멸.
 - **캐릭터**: 호흡 + 느린 좌우 흔들림, 해달 위 "z" 떠오름. `captain_<pose>_<n>.png` / `otter_<n>.png` 프레임이 있으면 프레임 애니메이션(idle 2fps, walk 6fps 등).
 
-## 에셋 자동 생성 (Gemini 이미지 생성)
+## 장면 에셋 파이프라인 (콕핏 뷰, `scripts/generate_scene.py`)
+
+레이어를 따로 생성하면 정렬이 맞지 않으므로, **마스터 장면 → 개별 레이어(마젠타) → 코드 스냅** 순서로 만듭니다.
+
+```
+export GEMINI_API_KEY=...
+python3 scripts/generate_scene.py --master     # 콕핏 뷰 마스터 장면 1장 (구도·스타일 기준)
+python3 scripts/generate_scene.py --isolate    # 선체 판·돛 천·휠·앉은 선장·섬을 각각 마젠타 위에 생성
+python3 scripts/generate_scene.py --assemble   # 크로마키 + 스냅 → assets/art/scene/*.png + assets/art/layout.json (API 미사용)
+python3 scripts/generate_scene.py --extras     # 선장 동작 스트립(walk/pull/stretch), UI 버튼, 해도 배경을 같은 스타일로
+```
+
+- 스냅 규칙: 돛 앞전은 선체 판에서 자동 측정한 마스트 x 에, 섬은 백플레이트에서 측정한 수평선 위에, 휠은 페데스탈 위, 선장은 우측 벤치 좌표에 놓입니다. 결과 좌표·피벗은 `layout.json` 에 기록되고 Godot 의 각 노드(`layer_key`)가 이를 읽어 배치합니다. `layout.json` 이 없으면 씬의 플레이스홀더 위치를 씁니다.
+- 흔들림: 카메라가 배 위에 있으므로 `World`(하늘·바다·섬)가 수평선 중앙을 축으로 반대로 기울고, 배는 거의 고정입니다.
+- 스타일 문구는 `generate_scene.py` 의 `STYLE`(모던 셀셰이딩) 에 있습니다. 마스터가 마음에 들 때까지 `--master --force` 로 다시 뽑은 뒤 나머지를 진행하세요.
+
+## 개별 에셋 생성 (구버전 파이프라인, `scripts/generate_assets.py`)
 
 `scripts/generate_assets.py` 가 아래 표의 항목을 순회하며 Gemini(Nano Banana)로 그림을 만들어 `assets/art/` 에 저장합니다.
 

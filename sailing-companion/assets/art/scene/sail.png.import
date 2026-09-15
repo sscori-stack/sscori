@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cqt32gc5els0l"
-path="res://.godot/imported/ui_btn_share.png-626668fa1d6c7b4369d7e4d8afad9a81.ctex"
+uid="uid://0n7jut6ep7ah"
+path="res://.godot/imported/sail.png-3282a12fde8464c14912c49896444226.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/ui_btn_share.png"
-dest_files=["res://.godot/imported/ui_btn_share.png-626668fa1d6c7b4369d7e4d8afad9a81.ctex"]
+source_file="res://assets/art/scene/sail.png"
+dest_files=["res://.godot/imported/sail.png-3282a12fde8464c14912c49896444226.ctex"]
 
 [params]
 

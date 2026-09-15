@@ -400,6 +400,21 @@ def split_strip(img: Image.Image, n: int, min_gap: int = 4) -> list[Image.Image]
             a, b = sorted([i, j])
             segments[a] = (segments[a][0], segments[b][1])
             del segments[b]
+    # 조각이 부족하면(얇은 밧줄 등이 프레임을 이어 붙인 경우) 가장 넓은 조각을 가장 "얇은" 열에서 자른다
+    col_count = [sum(1 for y in range(0, h, 2) if px[x, y] > 40) for x in range(w)]
+    guard = 0
+    while 0 < len(segments) < n and guard < n * 2:
+        guard += 1
+        i = max(range(len(segments)), key=lambda k: segments[k][1] - segments[k][0])
+        a, b = segments[i]
+        lo, hi = a + (b - a) // 4, b - (b - a) // 4
+        if hi - lo < 4:
+            break
+        cut = min(range(lo, hi), key=lambda x: col_count[x])
+        if col_count[cut] > max(3, h // 12):
+            break   # 얇은 다리가 아니라 진짜 한 덩어리
+        segments[i:i + 1] = [(a, cut), (cut, b)]
+        print(f"  · 얇은 연결부에서 분할: x={cut} (열 불투명 {col_count[cut]}px)")
     if len(segments) != n:
         print(f"  ! 스트립 조각 {len(segments)}개 ≠ {n} → 균등 분할로 대체")
         cw = w // n
@@ -426,11 +441,16 @@ def postprocess_frames(asset: Asset, raw: Image.Image) -> list[Image.Image]:
     pieces = [autocrop(p) for p in split_strip(img, asset.frames)]
     # 모든 프레임에 같은 배율을 쓰도록 가장 큰 프레임 기준으로 스케일을 정한다(프레임 사이 크기 튐 방지)
     tw, th = asset.size
-    scale = min(tw / max(p.width for p in pieces), th / max(p.height for p in pieces))
+    # 배율은 높이 기준(발~머리 크기가 프레임마다 같아야 한다). 너무 넓은 조각(뻗은 밧줄 등)은 가운데를 기준으로 잘라낸다.
+    scale = th / max(p.height for p in pieces)
     out = []
     for p in pieces:
         nw, nh = max(1, round(p.width * scale)), max(1, round(p.height * scale))
         r = p.resize((nw, nh), Image.LANCZOS)
+        if nw > tw:
+            left = (nw - tw) // 2
+            r = r.crop((left, 0, left + tw, nh))
+            nw = tw
         canvas = Image.new("RGBA", (tw, th), (0, 0, 0, 0))
         canvas.paste(r, ((tw - nw) // 2, th - nh), r)
         out.append(canvas)
