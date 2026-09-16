@@ -10,8 +10,6 @@ signal heading_changed(heading: float)
 @export var return_time: float = 2.5
 ## 클릭 판정 반경(픽셀, 화면 기준).
 @export var hit_radius: float = 32.0
-## layout.json 레이어 키. 있으면 허브 위치와 반경을 레이아웃에서 가져온다.
-@export var layer_key: String = ""
 
 var is_dragging: bool = false
 ## 손을 놓았을 때 파도에 따라 미세하게 흔들리는 폭(도).
@@ -27,11 +25,6 @@ var _last_emitted: float = INF
 
 func _ready() -> void:
 	add_to_group("wheel")
-	if layer_key != "" and SceneLayout.has_layer(layer_key):
-		position = SceneLayout.to_screen(SceneLayout.pivot(layer_key))
-		var l := SceneLayout.layer(layer_key)
-		var b: Array = l.get("bbox", [0, 0, 0, 0])
-		hit_radius = maxf(hit_radius, float(b[2] - b[0]) * 0.5 * 0.5 * 0.95)
 
 
 ## 좌클릭 "누름"은 UI 가 소비하지 않은 경우에만 도착한다.

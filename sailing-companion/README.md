@@ -1,7 +1,7 @@
 # Sailing Companion (Godot 4 MVP)
 
-바탕화면 한구석에 띄워두는 방치형 힐링 세일링 컴패니언. 고양이 선장과 해달이 **실제 지중해 마리나 사이를 실제 바람을 타고** 항해합니다.
-오토파일럿의 실체는 고양이 선장입니다. 선장이 헬름과 윈치를 느긋하게 오가며 휠을 돌리고 줄을 당겨야 배가 움직입니다.
+바탕화면 한구석에 띄워두는 방치형 힐링 세일링 컴패니언. **실제 지중해 마리나 사이를 실제 바람을 타고** 항해합니다.
+화면은 요트 콕핏에서 앞을 보는 시점이며, 하늘·바다·선체·돛·휠을 모두 코드로 그립니다(그림 파일 없음).
 
 - 엔진: **Godot 4.3 이상** (4.3 / 4.7 에서 검증, GL Compatibility 렌더러), GDScript
 - 창: 450×280, 보더리스, 항상 위, 크기 고정, 첫 실행 시 주 모니터 우측 하단(16px 여백)
@@ -18,8 +18,8 @@
 | 입력 | 동작 |
 |---|---|
 | 배경 **우클릭 드래그** | 창 이동 (위치 자동 저장) |
-| 조타 휠 **좌클릭 드래그** | 직접 조타(±90°). 잡고 있는 동안 선장은 윈치에서 돛만 맡는다. 손을 떼면 휠이 중립으로 돌아가고 10초 뒤 선장이 헬름을 되찾는다 |
-| 돛 위 **좌우 드래그** / **마우스 휠** | 돛 각도(시트) / 펼침(0.4~1.0). 만지는 동안 선장은 헬름에서 조타만 맡는다 |
+| 조타 휠 **좌클릭 드래그** | 직접 조타(±90°). 손을 떼면 휠이 중립으로 돌아가고 오토파일럿이 이어받는다 |
+| 돛 위 **좌우 드래그** / **마우스 휠** | 돛 각도(시트) / 펼침(0.4~1.0) |
 | 해도 버튼(바 왼쪽 세 번째) | 접이식 해도: 항로·현재 위치·항적·바람·축척·진행률 |
 | ⚙ 버튼 | 설정: 파도/음악 볼륨, BGM, 실제 바람(온라인), 구간 선택 → 출항, 종료 |
 | 뽀모도로 클릭 / 길게 누름 | 시작·일시정지 / 리셋. 종료 시 종소리 + 반짝임 |
@@ -36,98 +36,39 @@
 
 Windows 방화벽이 최초 네트워크 접근을 물어볼 수 있습니다. 거부해도 계절풍 폴백으로 동작합니다.
 
-## 2.5D 하이브리드 (현재 구조)
+## 화면 구성 (전부 절차적, 그림 파일 없음)
 
-- **2D**: 하늘·바다·섬(`World`, 수평선 축으로 기울어짐)과 선체 판(갑판·선실·마스트·페데스탈, `Boat/Hull`)은 Gemini 로 만든 그림.
-- **3D** (`Scene3D` 서브뷰포트, 투명 배경으로 2D 위에 합성): 마스트·붐·돛, 조타 휠, 선장. 툰(셀) 셰이더 + 뒤집힌 껍질 외곽선으로 "2D처럼 보이는 3D".
-  - 돛은 시뮬레이션의 돛 각도만큼 마스트를 축으로 **실제 회전**하고(택에 따라 좌/우), 펼침·트림·거스트로 부풀고 펄럭입니다. `scripts/scene3d/sail_rig.gd`
-  - 물체는 "프레임 픽셀 + 깊이"로 배치합니다(`layout.json` 좌표 그대로). 선장은 헬름(가까움)↔윈치(멀리) 사이를 걸으면 깊이가 바뀌어 원근이 자동으로 맞습니다. `cockpit3d.gd` 의 `*_depth` 로 조정.
-  - 입력은 2D 가 담당합니다(`Boat/Wheel` 휠 드래그, `Boat/SailInput` 돛 드래그/휠). 3D 는 그 값을 그립니다.
+콕핏 뷰 한 장면입니다. 섬·등대·캐릭터는 없고 망망대해만 있습니다.
 
-### 고양이 선장 3D 모델 넣기
+- **하늘** (`shaders/sky2d.gdshader`): 노을 그라디언트를 단계적으로 끊고, 값 노이즈 fbm 으로 뭉게구름을 두 겹(먼 구름·가까운 구름) 2~3단 색으로 그립니다. 태양 원반과 글로우 포함. 구름은 풍속에 따라 흐릅니다.
+- **바다** (`shaders/sea2d.gdshader`): 사인파 3개를 합성한 높이장을 4단 색으로 끊어 만화 물결처럼 보이게 하고, 능선에 흰 거품 선을 얹습니다. 태양 아래 세로 띠에 반사 길과 반짝임을 그립니다. 풍속·거스트·풍향·선속이 셰이더 파라미터로 실시간 반영됩니다.
+- **선체** (`scripts/scene3d/hull3d.gd`): 상자·원통만 써서 코드로 만든 3D 저폴리 요트입니다. 갑판·티크 판자·현측·선수 쐐기·콕핏 바닥·양쪽 벤치·코밍·선실·해치·페데스탈·스탠션·라이프라인·펄핏·윈치를 포함합니다.
+- **돛·마스트·붐** (`sail_rig.gd`): 돛은 시뮬레이션의 돛 각도만큼 마스트를 축으로 실제 회전하고(택에 따라 좌/우 전환), 펼침·트림 효율·거스트에 따라 부풀고 펄럭입니다.
+- **조타 휠** (`wheel3d.gd`): 토러스·스포크·허브 3D. 입력은 2D `Boat/Wheel` 노드가 받고 3D 가 그립니다. 시작 시 3D 허브의 화면 위치·반경을 2D 노드에 알려줍니다.
+- **셀셰이딩**: `shaders/toon.gdshader`(빛을 3단으로 끊고 림 라이트) + `shaders/outline.gdshader`(뒤집힌 껍질 외곽선). 3D 인데 2D 일러스트처럼 보이게 하는 부분입니다.
 
-`assets/models/captain.glb` 에 두면 자동으로 사용합니다(없으면 프리미티브 임시 고양이).
+### 흔들림과 수평선
 
-- glTF 2.0 바이너리, Y 위, 발바닥이 원점, 미터 단위(키는 코드가 화면 크기에 맞춰 조정).
-- 애니메이션 이름은 `idle`(앉기), `walk`, `pull`, `stretch` 를 우선 찾고, 없으면 `captain3d.gd` 의 `ANIM_CANDIDATES` 표로 매핑합니다. 없는 동작은 코드로 대체합니다.
-- 머티리얼의 알베도 색/텍스처는 툰 셰이더로 옮겨집니다(`shaders/toon.gdshader`, `outline.gdshader`).
+카메라가 배 위에 있으므로 배가 아니라 **세계(하늘·바다)가 반대로 기울고 상하로 움직입니다**(`world_view.gd`). 사각형을 화면보다 210px 넉넉히 그려서 기울어도 여백이 생기지 않습니다.
 
-## 움직임(생동감) 구성
+화면 수평선 위치의 **단일 기준은 3D 카메라**입니다. `Scene3D` 의 `horizon_screen_y()` 가 화각·하향각에서 수평선을 계산하고, 하늘·바다 사각형이 그 값에 맞춰 배치되므로 2D 와 3D 가 어긋나지 않습니다.
 
-- **바다**: 격자 메시(Polygon2D)에 파도 정점 변위 + 텍스처가 관찰자 쪽으로 흐름(선속 비례). 노을 반사 길에는 물비늘이 반짝이며 다가온다.
-- **돛**: 격자 메시가 바람 세기·트림에 따라 부풀고, 트림 불량·거스트에는 펄럭인다. 각도→폭, 펼침→높이, 붐 방향 좌우 반전.
-- **배**: 상하 4.5px·롤 2.2°·피칭 합성 + 시뮬레이션 힐. 선체 옆 물살 거품, 휠 미세 흔들림.
-- **하늘**: 별 반짝임, 달 광채 맥동, 구름 2겹 스크롤(풍속·풍향 반영), 등대 4초 점멸.
-- **캐릭터**: 호흡 + 느린 좌우 흔들림, 해달 위 "z" 떠오름. `captain_<pose>_<n>.png` / `otter_<n>.png` 프레임이 있으면 프레임 애니메이션(idle 2fps, walk 6fps 등).
+### 구도 조정용 값
 
-## 장면 에셋 파이프라인 (콕핏 뷰, `scripts/generate_scene.py`)
-
-레이어를 따로 생성하면 정렬이 맞지 않으므로, **마스터 장면 → 개별 레이어(마젠타) → 코드 스냅** 순서로 만듭니다.
-
-```
-export GEMINI_API_KEY=...
-python3 scripts/generate_scene.py --master     # 콕핏 뷰 마스터 장면 1장 (구도·스타일 기준)
-python3 scripts/generate_scene.py --isolate    # 선체 판·돛 천·휠·앉은 선장·섬을 각각 마젠타 위에 생성
-python3 scripts/generate_scene.py --assemble   # 크로마키 + 스냅 → assets/art/scene/*.png + assets/art/layout.json (API 미사용)
-python3 scripts/generate_scene.py --extras     # 선장 동작 스트립(walk/pull/stretch), UI 버튼, 해도 배경을 같은 스타일로
-```
-
-- 스냅 규칙: 돛 앞전은 선체 판에서 자동 측정한 마스트 x 에, 섬은 백플레이트에서 측정한 수평선 위에, 휠은 페데스탈 위, 선장은 우측 벤치 좌표에 놓입니다. 결과 좌표·피벗은 `layout.json` 에 기록되고 Godot 의 각 노드(`layer_key`)가 이를 읽어 배치합니다. `layout.json` 이 없으면 씬의 플레이스홀더 위치를 씁니다.
-- 흔들림: 카메라가 배 위에 있으므로 `World`(하늘·바다·섬)가 수평선 중앙을 축으로 반대로 기울고, 배는 거의 고정입니다.
-- 스타일 문구는 `generate_scene.py` 의 `STYLE`(모던 셀셰이딩) 에 있습니다. 마스터가 마음에 들 때까지 `--master --force` 로 다시 뽑은 뒤 나머지를 진행하세요.
-
-## 개별 에셋 생성 (구버전 파이프라인, `scripts/generate_assets.py`)
-
-`scripts/generate_assets.py` 가 아래 표의 항목을 순회하며 Gemini(Nano Banana)로 그림을 만들어 `assets/art/` 에 저장합니다.
-
-```
-pip install pillow requests
-export GEMINI_API_KEY=...                       # Windows PowerShell: $env:GEMINI_API_KEY="..."
-python3 scripts/generate_assets.py              # 없는 파일만 생성
-python3 scripts/generate_assets.py --force --only captain,otter   # 지정 항목 재생성
-python3 scripts/generate_assets.py --dry-run    # 프롬프트만 확인
-python3 scripts/generate_assets.py --report     # 생성된 파일 크기/알파 검사 표
-python3 scripts/generate_assets.py --selftest   # 후처리(크로마키·심리스·크기 맞춤) 자가 테스트
-```
-
-- 스타일 고정 문구(지브리풍 수채화, 노을 톤)를 모든 프롬프트 앞에 붙이고, `reference/image_0.png` 가 있으면 화풍 참조로 함께 보냅니다(없으면 먼저 만든 `sky.png` 를 색감 앵커로 사용).
-- 투명이 필요한 항목은 마젠타(#FF00FF) 단색 배경으로 요청한 뒤 Pillow 크로마키로 알파를 만듭니다(모델이 진짜 알파를 주면 그대로 사용). 포즈 변형(`captain_*`)은 생성된 `captain.png` 를 캐릭터 참조로 첨부합니다.
-- `sea`, `clouds_*` 는 심리스 요청 + 좌우 가장자리 롤-블렌딩 후처리로 타일링을 보장합니다.
-- 결과는 각 항목의 목표 크기(창 2배 해상도)로 잘라 맞추므로 `main.tscn` 배치를 바꾸지 않아도 됩니다.
-- 키가 없거나 호출이 전부 실패해도 파일을 만들지 않으므로 게임은 플레이스홀더로 정상 실행됩니다.
-- **주의**: Gemini 이미지 모델은 무료 등급에서 할당량이 0 일 수 있습니다(`429 ... limit: 0`). 이 경우 Google AI Studio 에서 결제가 활성화된 프로젝트의 키가 필요합니다. 스크립트는 이를 감지하면 남은 항목을 건너뜁니다.
-- **프레임 스트립**: `captain_idle_anim`(3), `captain_walk_anim`(4), `captain_pull_anim`(3), `captain_steer_anim`(2), `captain_pet_anim`(2), `captain_stretch_anim`(3), `otter_anim`(3) 항목은 프레임 N개를 한 장(가로 스트립)으로 생성한 뒤 투명 열을 기준으로 분할해 `<접두사>_<n>.png` 로 저장합니다. 없으면 단일 이미지로 동작합니다.
-- 생성 후 Godot 에디터를 열면 자동 임포트됩니다(에디터 없이: `godot --headless --path sailing-companion --import`).
-
-## 에셋 교체 (코드 수정 없음)
-
-`assets/art/` 에 아래 이름의 **투명 배경 PNG**(창 2배 해상도, 900×560 캔버스 기준)를 넣으면 다음 실행부터 자동 교체됩니다.
-에디터가 열려 있으면 파일 시스템 독에서 자동 임포트되며, 임포트 기본값(mipmaps off, filter linear)이 프로젝트 설정에 맞춰져 있습니다.
-
-| 파일 | 내용 | 기준점(pivot) |
+| 위치 | 값 | 뜻 |
 |---|---|---|
-| `sky.png` | 노을 하늘(불투명, 900×560) | 좌상단 |
-| `clouds_far.png`, `clouds_near.png` | 구름 띠, 좌우 타일링(양끝 연결) | 좌상단 |
-| `horizon.png` | 먼 섬 + 등대 실루엣(폭 900 이상, 높이 ~120) | 하단 중앙 (수평선 y=152) |
-| `sea.png` | 바다(폭 1000 이상) | 상단 중앙 (수평선 y=150) |
-| `sail.png` | 돛 + 마스트(부풀어 있는 상태, 붐은 오른쪽으로) | 하단 중앙 (마스트 밑동). 코드가 각도·펼침에 따라 폭/높이/좌우를 바꿈 |
-| `deck.png` | 갑판 + 로프 + 나침반 | 하단 중앙 |
-| `winch.png` | 윈치/시트 클리트(선장이 줄을 당기는 자리) | 하단 중앙 |
-| `otter.png` | 잠든 해달 | 하단 중앙 (호흡 피벗) |
-| `captain.png` | 앉아서 바다를 보는 고양이 선장(기본/idle) | 하단 중앙 (호흡 피벗) |
-| `captain_walk.png`, `captain_pull.png`, `captain_steer.png`, `captain_pet.png`, `captain_stretch.png` | 포즈별(선택). 없으면 idle 을 그대로 씀 | 하단 중앙 |
-| `captain_<pose>_<n>.png`, `otter_<n>.png` | 포즈별 프레임(선택, n=0..). 2장 이상 있으면 프레임 애니메이션 | 하단 중앙 |
-| `wheel.png` | 조타 휠(정중앙이 회전축) | 중앙 |
-| `windex.png` | 마스트 꼭대기 풍향 화살표(위쪽이 화살촉) | 중앙 |
-| `cockpit.png` | 하단 난간/콕핏 프레임 | 하단 중앙 |
-| `chart_bg.png` | 해도 인셋 배경(400×260, 양피지 느낌) | – |
-| `ui_btn_settings.png`, `ui_btn_share.png`, `ui_btn_chart.png` | 하단 바 버튼 아이콘 | – |
+| `Scene3D` | `fov_deg` 58 | 수직 화각 |
+| `Scene3D` | `pitch_deg` 9 | 카메라 하향각(크면 갑판이 더 보이고 수평선이 올라감) |
+| `Scene3D` | `eye_offset`, `yaw_deg` | 눈 위치(우현 치우침)와 좌우 시선 |
+| `Scene3D` | `hull_offset_z`, `mast_z`, `wheel_z` | 선체·마스트·휠의 전후 위치(m) |
+| `Hull` | `deck_y` −1.62 | 눈높이에서 갑판까지(작으면 갑판이 화면을 덜 차지) |
+| `SailRig` | `mast_height`, `boom_height`, `boom_length` | 돛 크기와 붐 높이(붐이 낮으면 돛이 더 보이지만 시야를 가림) |
+| `World` | `sun_x`, `margin`, `parallax_px` | 태양 가로 위치, 회전 여백, 조타 패럴랙스 |
+| `World/Sky` | `follow_real_time` | 켜면 실제 시각에 따라 낮·노을·밤으로 바뀜(기본 꺼짐 = 항상 노을) |
 
-각 노드의 위치/크기/색은 `scenes/main.tscn` 인스펙터에서 조정할 수 있습니다(`texture_path`, `pivot_normalized`, `placeholder_*`).
-선장의 자리(헬름/윈치/해달)는 `Boat/Crew` 노드의 `helm_spot`, `winch_spot`, `otter_spot` 으로 조정합니다.
+## 남은 그림 파일
 
-오디오: `assets/audio/waves_loop.ogg`, `bgm_lofi.ogg`, `bell.ogg` (없으면 조용히 건너뜀).
-폰트: `assets/fonts/` 에 한글 지원 폰트(.ttf/.otf) 1개를 넣으면 UI 기본 폰트로 사용됩니다. 없으면 Godot 기본 폰트(한글 미표시, 영문 라벨로 대체).
+`assets/art/` 에는 UI 버튼 3개(`ui_btn_settings/share/chart.png`)와 해도 배경(`chart_bg.png`)만 남았습니다. 나머지는 전부 코드가 그립니다. 이 4개는 `scripts/generate_assets.py` 로 다시 만들 수 있습니다(`GEMINI_API_KEY` 필요, 없으면 벡터 아이콘으로 대체됩니다).
 
 ## Windows 실행 파일 빌드
 
